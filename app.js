@@ -1,7 +1,6 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 
-const QUERY = `
-fragment lotteryDrawsFragment on LotteryDraw {
+const DRAW_FRAGMENT = `fragment lotteryDrawsFragment on LotteryDraw {
     id
     year
     no
@@ -30,11 +29,26 @@ fragment lotteryDrawsFragment on LotteryDraw {
       drawnNo
       xDrawnNo
     }
-  }
+  }`;
+
+const QUERY = `${DRAW_FRAGMENT}
 
         query marksixResult($lastNDraw: Int, $startDate: String, $endDate: String, $drawType: LotteryDrawType) {
             lotteryDraws(lastNDraw: $lastNDraw, startDate: $startDate, endDate: $endDate, drawType: $drawType) {
               ...lotteryDrawsFragment
+            }
+        }
+    `;
+
+const NEXT_QUERY = `${DRAW_FRAGMENT}
+
+        query marksixDraw {
+            timeOffset {
+                m6  
+                ts  
+            }
+            lotteryDraws {
+                ...lotteryDrawsFragment
             }
         }
     `;
@@ -96,6 +110,12 @@ function formatNumber(num) {
   return n.toLocaleString("en-US");
 }
 
+function formatAverage(sum, count) {
+  if (!count) return "-";
+  const avg = sum / count;
+  return Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
+}
+
 function formatPrizeZh(num) {
   const n = Number(num);
   if (!Number.isFinite(n)) return "-";
@@ -117,7 +137,7 @@ function formatPrizeZh(num) {
 }
 
 function formatDateDmy(dateStr) {
-  const dt = new Date(dateStr);
+  const dt = new Date(normalizeDateString(dateStr));
   if (Number.isNaN(dt.getTime())) return "-";
   const day = String(dt.getDate()).padStart(2, "0");
   const month = String(dt.getMonth() + 1).padStart(2, "0");
@@ -126,23 +146,44 @@ function formatDateDmy(dateStr) {
 }
 
 function formatWeekday(dateStr) {
-  const dt = new Date(dateStr);
+  const dt = new Date(normalizeDateString(dateStr));
   if (Number.isNaN(dt.getTime())) return "";
   const names = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
   return names[dt.getDay()];
 }
 
 function formatTime(dateStr) {
-  const dt = new Date(dateStr);
+  const dt = new Date(normalizeDateString(dateStr));
   if (Number.isNaN(dt.getTime())) return "-";
   const hh = String(dt.getHours()).padStart(2, "0");
   const mm = String(dt.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
+function normalizeDateString(dateStr) {
+  if (!dateStr) return "";
+  if (dateStr.includes("T")) return dateStr;
+  const dateOnlyWithOffset = /^(\d{4}-\d{2}-\d{2})\+(\d{2}:\d{2})$/;
+  if (dateOnlyWithOffset.test(dateStr)) {
+    const [, datePart, offset] = dateStr.match(dateOnlyWithOffset);
+    return `${datePart}T00:00:00+${offset}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}\+\d{2}:\d{2}/.test(dateStr)) {
+    const [datePart, offset] = dateStr.split("+");
+    return `${datePart}T00:00:00+${offset}`;
+  }
+  return dateStr;
+}
+
 function formatDrawNo(draw) {
   const no = String(draw.no ?? "").padStart(3, "0");
-  return `${draw.year}/${no}`;
+  const year = String(draw.year ?? "");
+  return `${year}/${no}`;
+}
+
+function formatYmdHK(date) {
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong" });
+  return fmt.format(date).replace(/-/g, "");
 }
 
 function parseNumber(value) {
@@ -202,9 +243,12 @@ function renderExcludedSummary() {
     const meta = document.createElement("div");
     meta.textContent = `${dateText} 第${draw.year}/${draw.no}期`;
 
+    const detail = document.createElement("div");
+    detail.className = "excluded-detail";
     const numsWrap = document.createElement("div");
     numsWrap.className = "excluded-numbers";
-    (draw.drawResult?.drawnNo || []).forEach((n) => {
+    const drawnNums = draw.drawResult?.drawnNo || [];
+    drawnNums.forEach((n) => {
       const ball = document.createElement("span");
       ball.className = `ball ${getColorClass(n)} with-element`;
       ball.innerHTML = `
@@ -224,8 +268,15 @@ function renderExcludedSummary() {
       numsWrap.appendChild(ball);
     }
 
+    const sum = drawnNums.reduce((acc, n) => acc + n, 0);
+    const stats = document.createElement("div");
+    stats.className = "excluded-stats";
+    stats.textContent = `總和 ${sum}，平均數 ${formatAverage(sum, drawnNums.length)}`;
+
+    detail.appendChild(numsWrap);
+    detail.appendChild(stats);
     line.appendChild(meta);
-    line.appendChild(numsWrap);
+    line.appendChild(detail);
     els.excludedSummary.appendChild(line);
   });
 }
@@ -235,10 +286,14 @@ function pickNextDraw(draws) {
   const now = new Date();
   const upcoming = draws
     .filter((draw) => {
-      const dt = new Date(draw.drawDate || "");
+      const dt = new Date(normalizeDateString(draw.closeDate || draw.drawDate || ""));
       return !Number.isNaN(dt.getTime()) && dt >= now && draw.status !== "Result";
     })
-    .sort((a, b) => new Date(a.drawDate) - new Date(b.drawDate));
+    .sort(
+      (a, b) =>
+        new Date(normalizeDateString(a.closeDate || a.drawDate || "")) -
+        new Date(normalizeDateString(b.closeDate || b.drawDate || ""))
+    );
   if (upcoming.length) return upcoming[0];
   return draws.find((draw) => draw.status !== "Result") || draws[0];
 }
@@ -249,9 +304,9 @@ async function fetchLatestInfo() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: QUERY,
-        variables: { lastNDraw: 30, drawType: "All" },
-        operationName: "marksixResult"
+        query: NEXT_QUERY,
+        variables: {},
+        operationName: "marksixDraw"
       })
     });
     const data = await res.json();
@@ -262,9 +317,7 @@ async function fetchLatestInfo() {
     state.latestInfo = pickNextDraw(draws);
     renderDraws();
   } catch (err) {
-    if (els.heroJackpot) {
-      els.heroJackpot.textContent = "-";
-    }
+    if (els.heroJackpot) els.heroJackpot.textContent = "-";
   }
 }
 
@@ -277,7 +330,6 @@ async function fetchDraws(n) {
   try {
     if (n === 0) {
       state.draws = [];
-      state.latestInfo = null;
       renderDraws();
       buildExcluded();
       setFetchStatus("已更新：0 期");
@@ -299,11 +351,11 @@ async function fetchDraws(n) {
       throw new Error(data.errors.map((e) => e.message).join(" | "));
     }
     state.draws = data.data?.lotteryDraws || [];
-    state.latestInfo = pickNextDraw(state.draws);
     renderDraws();
     buildExcluded();
     setFetchStatus(`已更新：${state.draws.length} 期`);
     autoUpdate();
+    fetchLatestInfo();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     setFetchStatus(`${msg} ➜ ✨ 拉取失敗，請稍後再試或手動刷新。`);
@@ -322,21 +374,25 @@ function renderDraws() {
     const dateText = formatDateDmy(drawDate);
     const weekday = formatWeekday(drawDate);
     const closeTime = formatTime(closeDate);
-    const prize =
-      latest.lotteryPool?.estimatedPrize ||
+    const investment =
+      latest.lotteryPool?.totalInvestment ||
       latest.lotteryPool?.jackpot ||
       latest.lotteryPool?.derivedFirstPrizeDiv ||
       "-";
-    const formattedPrize = formatNumber(prize);
-    const zhPrize = formatPrizeZh(prize);
-    const snowball = latest.snowballName_ch || latest.snowballCode || "";
+    const formattedInvestment = formatNumber(investment);
+    const zhInvestment = formatPrizeZh(investment);
+    const snowballParts = [];
+    if (latest.snowballCode) snowballParts.push(latest.snowballCode);
+    if (latest.snowballName_ch) snowballParts.push(latest.snowballName_ch);
+    const snowballText = snowballParts.length ? ` ${snowballParts.join(" ")}` : "";
     const drawNo = formatDrawNo(latest);
+    const dateLine = weekday ? `${dateText} (${weekday})` : dateText;
 
     els.heroJackpot.innerHTML = `
-      <span>金多寶攪珠期數 ${drawNo} ${snowball}</span>
-      <span>攪珠日期 ${dateText} (${weekday})</span>
+      <span>金多寶攪珠期數 ${drawNo}${snowballText}</span>
+      <span>攪珠日期 ${dateLine}</span>
       <span>截止售票時間 ${closeTime}</span>
-      <span>投注額 $${formattedPrize}（${zhPrize}）</span>
+      <span>投注額 $${formattedInvestment}（${zhInvestment}）</span>
     `;
   }
 }
@@ -713,6 +769,8 @@ function renderResults(sets) {
   els.resultList.innerHTML = "";
   if (!sets.length) return;
   sets.forEach((nums, idx) => {
+    const sum = nums.reduce((acc, n) => acc + n, 0);
+    const avgText = formatAverage(sum, nums.length);
     const card = document.createElement("div");
     card.className = "result-card";
     card.innerHTML = `
@@ -728,6 +786,7 @@ function renderResults(sets) {
           )
           .join("")}
       </div>
+      <div class="result-stats">總和 ${sum}，平均數 ${avgText}</div>
     `;
     els.resultList.appendChild(card);
   });

@@ -13,11 +13,16 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
   background: radial-gradient(circle at top, #ffffff 0%, #f6f1e6 40%, #f1e6d2 100%);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 .page {
@@ -60,8 +65,12 @@ body {
 
 .hero h1 {
   font-family: "DM Serif Display", "Noto Serif TC", serif;
-  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   margin: 8px 0 12px;
+}
+
+.hero .eyebrow {
+  display: none;
 }
 
 .eyebrow {
@@ -240,11 +249,23 @@ body {
   color: var(--muted);
 }
 
+.excluded-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .excluded-numbers {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+.excluded-stats,
+.result-stats {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .excluded-numbers .ball {
@@ -338,7 +359,7 @@ body {
 
 .number-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(32px, 1fr));
+  grid-template-columns: repeat(7, minmax(32px, 1fr));
   gap: 4px;
   margin-top: 14px;
 }
@@ -413,12 +434,20 @@ body {
 }
 
 @media (max-width: 720px) {
+  body {
+    height: 100vh;
+    overflow: hidden;
+  }
+
   .page {
     padding: 32px 16px 64px;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .hero h1 {
-    font-size: 2.2rem;
+    font-size: 1.85rem;
   }
 
   .ball {
