@@ -248,6 +248,7 @@ function renderExcludedSummary() {
     const numsWrap = document.createElement("div");
     numsWrap.className = "excluded-numbers";
     const drawnNums = draw.drawResult?.drawnNo || [];
+    const allNums = [...drawnNums];
     drawnNums.forEach((n) => {
       const ball = document.createElement("span");
       ball.className = `ball ${getColorClass(n)} with-element`;
@@ -260,6 +261,7 @@ function renderExcludedSummary() {
     if (draw.drawResult?.xDrawnNo) {
       const ball = document.createElement("span");
       const special = draw.drawResult.xDrawnNo;
+      allNums.push(special);
       ball.className = "ball special with-element";
       ball.innerHTML = `
         <span>${pad2(special)}</span>
@@ -268,10 +270,10 @@ function renderExcludedSummary() {
       numsWrap.appendChild(ball);
     }
 
-    const sum = drawnNums.reduce((acc, n) => acc + n, 0);
+    const sum = allNums.reduce((acc, n) => acc + n, 0);
     const stats = document.createElement("div");
     stats.className = "excluded-stats";
-    stats.textContent = `總和 ${sum}，平均數 ${formatAverage(sum, drawnNums.length)}`;
+    stats.textContent = `總和 ${sum}，平均數 ${formatAverage(sum, allNums.length)}`;
 
     metaWrap.appendChild(meta);
     metaWrap.appendChild(stats);
@@ -412,6 +414,13 @@ function getElementTag(num) {
   return "";
 }
 
+function colorMaskForNum(num) {
+  const color = getColorClass(num);
+  if (color === "red") return 1;
+  if (color === "blue") return 2;
+  return 4;
+}
+
 function renderNumberBoard() {
   if (!els.numberBoard) return;
   if (!els.numberBoard.children.length) {
@@ -543,7 +552,8 @@ function elementMaskForNum(num) {
   if (tag === "木") return 2;
   if (tag === "水") return 4;
   if (tag === "火") return 8;
-  return 16;
+  if (tag === "土") return 16;
+  return 0;
 }
 
 async function countCombinations(pool, filters, token) {
@@ -555,6 +565,7 @@ async function countCombinations(pool, filters, token) {
   const suffixBig = new Array(n + 1).fill(0);
   const suffixRowsMask = new Array(n + 1).fill(0);
   const suffixElementsMask = new Array(n + 1).fill(0);
+  const suffixColorsMask = new Array(n + 1).fill(0);
 
   for (let i = 0; i < n; i += 1) {
     prefix[i + 1] = prefix[i] + pool[i];
@@ -564,6 +575,7 @@ async function countCombinations(pool, filters, token) {
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
     suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
     suffixElementsMask[i] = suffixElementsMask[i + 1] | elementMaskForNum(pool[i]);
+    suffixColorsMask[i] = suffixColorsMask[i + 1] | colorMaskForNum(pool[i]);
   }
 
   const requiredElementsMask =
@@ -572,10 +584,24 @@ async function countCombinations(pool, filters, token) {
     (filters.elements.water ? 4 : 0) |
     (filters.elements.fire ? 8 : 0) |
     (filters.elements.earth ? 16 : 0);
+  const needMultiColor = filters.colors.length >= 2;
 
   let iterations = 0;
 
-  async function dfs(start, depth, sum, oddCount, bigCount, tails, lastNum, runLen, rowsMask, elementsMask, currentGcd) {
+  async function dfs(
+    start,
+    depth,
+    sum,
+    oddCount,
+    bigCount,
+    tails,
+    lastNum,
+    runLen,
+    rowsMask,
+    elementsMask,
+    colorMask,
+    currentGcd
+  ) {
     if (state.countToken !== token) return 0;
     const remaining = 6 - depth;
     if (remaining === 0) {
@@ -588,6 +614,7 @@ async function countCombinations(pool, filters, token) {
       if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
       if ((elementsMask & requiredElementsMask) !== requiredElementsMask) return 0;
+      if (needMultiColor && popcount(colorMask) < 2) return 0;
       if (filters.noMultiplicationCombo) {
         for (let base = 2; base <= 9; base += 1) {
           if (currentGcd % base === 0) return 0;
@@ -634,6 +661,9 @@ async function countCombinations(pool, filters, token) {
     if (((elementsMask | suffixElementsMask[start]) & requiredElementsMask) !== requiredElementsMask) {
       return 0;
     }
+    if (needMultiColor && popcount(colorMask | suffixColorsMask[start]) < 2) {
+      return 0;
+    }
 
     let total = 0;
     for (let i = start; i <= n - remaining; i += 1) {
@@ -651,6 +681,7 @@ async function countCombinations(pool, filters, token) {
       if (nextRun > filters.maxConsecutive) continue;
       const nextRows = rowsMask | (1 << (getRowIndex(num) - 1));
       const nextElements = elementsMask | elementMaskForNum(num);
+      const nextColors = colorMask | colorMaskForNum(num);
       const nextGcd = currentGcd === 0 ? num : gcd(currentGcd, num);
 
       iterations += 1;
@@ -670,13 +701,14 @@ async function countCombinations(pool, filters, token) {
         nextRun,
         nextRows,
         nextElements,
+        nextColors,
         nextGcd
       );
     }
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -703,6 +735,10 @@ function isValid(nums, filters) {
   if (filters.colors.length) {
     if (nums.some((n) => !filters.colors.includes(getColorClass(n)))) {
       return false;
+    }
+    if (filters.colors.length >= 2) {
+      const colorSet = new Set(nums.map((n) => getColorClass(n)));
+      if (colorSet.size < 2) return false;
     }
   }
   if (filters.noMultiplicationCombo) {
