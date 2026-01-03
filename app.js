@@ -486,13 +486,12 @@ function readFilters() {
   const colors = [els.colorRed, els.colorBlue, els.colorGreen]
     .filter((input) => input && input.checked)
     .map((input) => input.id.replace("color", "").toLowerCase());
-  const elements = {
-    metal: !!els.needMetal?.checked,
-    wood: !!els.needWood?.checked,
-    water: !!els.needWater?.checked,
-    fire: !!els.needFire?.checked,
-    earth: !!els.needEarth?.checked
-  };
+  const elements = [];
+  if (els.needMetal?.checked) elements.push("金");
+  if (els.needWood?.checked) elements.push("木");
+  if (els.needWater?.checked) elements.push("水");
+  if (els.needFire?.checked) elements.push("火");
+  if (els.needEarth?.checked) elements.push("土");
 
   return {
     sumMin: parseNumber(els.sumMin.value),
@@ -515,9 +514,13 @@ function readFilters() {
 
 function getFilteredPool(filters) {
   const pool = [];
+  const allowedElements = filters.elements;
   for (let i = 1; i <= 49; i += 1) {
     if (state.excluded.has(i)) continue;
     if (filters.colors.length && !filters.colors.includes(getColorClass(i))) {
+      continue;
+    }
+    if (allowedElements.length && !allowedElements.includes(getElementTag(i))) {
       continue;
     }
     pool.push(i);
@@ -564,7 +567,6 @@ async function countCombinations(pool, filters, token) {
   const suffixOdd = new Array(n + 1).fill(0);
   const suffixBig = new Array(n + 1).fill(0);
   const suffixRowsMask = new Array(n + 1).fill(0);
-  const suffixElementsMask = new Array(n + 1).fill(0);
   const suffixColorsMask = new Array(n + 1).fill(0);
 
   for (let i = 0; i < n; i += 1) {
@@ -574,16 +576,9 @@ async function countCombinations(pool, filters, token) {
     suffixOdd[i] = suffixOdd[i + 1] + (pool[i] % 2 === 1 ? 1 : 0);
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
     suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
-    suffixElementsMask[i] = suffixElementsMask[i + 1] | elementMaskForNum(pool[i]);
     suffixColorsMask[i] = suffixColorsMask[i + 1] | colorMaskForNum(pool[i]);
   }
 
-  const requiredElementsMask =
-    (filters.elements.metal ? 1 : 0) |
-    (filters.elements.wood ? 2 : 0) |
-    (filters.elements.water ? 4 : 0) |
-    (filters.elements.fire ? 8 : 0) |
-    (filters.elements.earth ? 16 : 0);
   const needMultiColor = filters.colors.length >= 2;
 
   let iterations = 0;
@@ -598,7 +593,6 @@ async function countCombinations(pool, filters, token) {
     lastNum,
     runLen,
     rowsMask,
-    elementsMask,
     colorMask,
     currentGcd
   ) {
@@ -613,7 +607,6 @@ async function countCombinations(pool, filters, token) {
       if (filters.noAllEven && oddCount === 0) return 0;
       if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
-      if ((elementsMask & requiredElementsMask) !== requiredElementsMask) return 0;
       if (needMultiColor && popcount(colorMask) < 2) return 0;
       if (filters.noMultiplicationCombo) {
         for (let base = 2; base <= 9; base += 1) {
@@ -658,9 +651,6 @@ async function countCombinations(pool, filters, token) {
       if (possibleRows < filters.minRows) return 0;
     }
 
-    if (((elementsMask | suffixElementsMask[start]) & requiredElementsMask) !== requiredElementsMask) {
-      return 0;
-    }
     if (needMultiColor && popcount(colorMask | suffixColorsMask[start]) < 2) {
       return 0;
     }
@@ -680,7 +670,6 @@ async function countCombinations(pool, filters, token) {
       const nextRun = lastNum !== null && num === lastNum + 1 ? runLen + 1 : 1;
       if (nextRun > filters.maxConsecutive) continue;
       const nextRows = rowsMask | (1 << (getRowIndex(num) - 1));
-      const nextElements = elementsMask | elementMaskForNum(num);
       const nextColors = colorMask | colorMaskForNum(num);
       const nextGcd = currentGcd === 0 ? num : gcd(currentGcd, num);
 
@@ -700,7 +689,6 @@ async function countCombinations(pool, filters, token) {
         num,
         nextRun,
         nextRows,
-        nextElements,
         nextColors,
         nextGcd
       );
@@ -708,7 +696,7 @@ async function countCombinations(pool, filters, token) {
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -746,20 +734,10 @@ function isValid(nums, filters) {
       if (nums.every((n) => n % base === 0)) return false;
     }
   }
-  if (filters.elements.metal && !nums.some((n) => getElementTag(n) === "金")) {
-    return false;
-  }
-  if (filters.elements.wood && !nums.some((n) => getElementTag(n) === "木")) {
-    return false;
-  }
-  if (filters.elements.water && !nums.some((n) => getElementTag(n) === "水")) {
-    return false;
-  }
-  if (filters.elements.fire && !nums.some((n) => getElementTag(n) === "火")) {
-    return false;
-  }
-  if (filters.elements.earth && !nums.some((n) => getElementTag(n) === "土")) {
-    return false;
+  if (filters.elements.length) {
+    if (nums.some((n) => !filters.elements.includes(getElementTag(n)))) {
+      return false;
+    }
   }
 
   return true;
