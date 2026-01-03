@@ -30,6 +30,8 @@ body {
   margin: 0 auto;
   padding: 48px 20px 80px;
   position: relative;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .page::before,
@@ -104,6 +106,7 @@ body {
   margin-bottom: 20px;
   box-shadow: var(--shadow);
   animation: fade-up 0.7s ease-out both;
+  overflow-x: hidden;
 }
 
 .panel h2 {
@@ -359,7 +362,7 @@ body {
 
 .number-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(32px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   margin-top: 14px;
 }
@@ -448,6 +451,15 @@ body {
 
   .hero h1 {
     font-size: 1.85rem;
+  }
+
+  .excluded-line {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .excluded-detail {
+    width: 100%;
   }
 
   .ball {
