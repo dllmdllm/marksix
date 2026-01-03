@@ -404,12 +404,12 @@ function getColorClass(num) {
 }
 
 function getElementTag(num) {
-  const last = num % 10;
-  if (last === 1 || last === 6) return "水";
-  if (last === 2 || last === 7) return "火";
-  if (last === 3 || last === 8) return "木";
-  if (last === 4 || last === 9) return "金";
-  return "土";
+  if ([1, 2, 9, 10, 23, 24, 31, 32, 39, 40].includes(num)) return "金";
+  if ([5, 6, 13, 14, 21, 22, 35, 36, 43, 44].includes(num)) return "木";
+  if ([11, 12, 19, 20, 27, 28, 41, 42, 49].includes(num)) return "水";
+  if ([7, 8, 15, 16, 29, 30, 37, 38, 45, 46].includes(num)) return "火";
+  if ([3, 4, 17, 18, 25, 26, 33, 34, 47, 48].includes(num)) return "土";
+  return "";
 }
 
 function renderNumberBoard() {
