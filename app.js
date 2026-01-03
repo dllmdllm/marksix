@@ -240,11 +240,11 @@ function renderExcludedSummary() {
     const line = document.createElement("div");
     line.className = "excluded-line";
     const dateText = draw.drawDate?.split("+")[0] || "";
+    const metaWrap = document.createElement("div");
+    metaWrap.className = "excluded-meta";
     const meta = document.createElement("div");
     meta.textContent = `${dateText} 第${draw.year}/${draw.no}期`;
 
-    const detail = document.createElement("div");
-    detail.className = "excluded-detail";
     const numsWrap = document.createElement("div");
     numsWrap.className = "excluded-numbers";
     const drawnNums = draw.drawResult?.drawnNo || [];
@@ -273,10 +273,10 @@ function renderExcludedSummary() {
     stats.className = "excluded-stats";
     stats.textContent = `總和 ${sum}，平均數 ${formatAverage(sum, drawnNums.length)}`;
 
-    detail.appendChild(numsWrap);
-    detail.appendChild(stats);
-    line.appendChild(meta);
-    line.appendChild(detail);
+    metaWrap.appendChild(meta);
+    metaWrap.appendChild(stats);
+    line.appendChild(metaWrap);
+    line.appendChild(numsWrap);
     els.excludedSummary.appendChild(line);
   });
 }

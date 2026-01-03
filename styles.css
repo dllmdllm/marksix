@@ -252,7 +252,7 @@ body {
   color: var(--muted);
 }
 
-.excluded-detail {
+.excluded-meta {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -458,7 +458,7 @@ body {
     gap: 6px;
   }
 
-  .excluded-detail {
+  .excluded-meta {
     width: 100%;
   }
 
