@@ -114,11 +114,38 @@ body {
   font-size: 1.2rem;
 }
 
+.center-title {
+  text-align: center;
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
   align-items: start;
+}
+
+.sum-range {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.range-row {
+  display: flex;
+  gap: 12px;
+}
+
+.range-row input[type="range"] {
+  flex: 1;
+}
+
+.range-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
 .line {

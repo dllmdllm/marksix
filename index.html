@@ -52,18 +52,24 @@
       </section>
 
       <section class="panel filters">
-        <h2>條件設定</h2>
+        <h2 class="center-title">條件設定</h2>
         <div class="field line">
           <label>6個號碼總和</label>
-          <div class="inline">
-            <input id="sumMin" type="number" min="0" placeholder="100" />
-            <span class="sep">–</span>
-            <input id="sumMax" type="number" min="0" placeholder="170" />
+          <div class="sum-range">
+            <div class="range-row">
+              <input id="sumMin" type="range" min="0" max="200" value="100" />
+              <input id="sumMax" type="range" min="0" max="200" value="170" />
+            </div>
+            <div class="range-values">
+              <span id="sumMinLabel">100</span>
+              <span class="sep">–</span>
+              <span id="sumMaxLabel">170</span>
+            </div>
           </div>
         </div>
 
         <div class="field line">
-          <label>單號碼 / 雙號碼</label>
+          <label>單數號碼 / 雙數號碼</label>
           <div class="count-stack">
             <div class="count-line">
               <label class="mini-label">單號碼</label>

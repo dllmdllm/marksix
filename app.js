@@ -74,6 +74,8 @@ const els = {
   earthCount: document.getElementById("earthCount"),
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
+  sumMinLabel: document.getElementById("sumMinLabel"),
+  sumMaxLabel: document.getElementById("sumMaxLabel"),
   oddCount: document.getElementById("oddCount"),
   evenCount: document.getElementById("evenCount"),
   smallCount: document.getElementById("smallCount"),
@@ -537,9 +539,14 @@ function readFilters() {
     if (missing) elementCounts[missing] = remaining;
   }
 
+  const sumMinValue = parseNumber(els.sumMin.value);
+  const sumMaxValue = parseNumber(els.sumMax.value);
+  const sumMin = sumMinValue !== null && sumMaxValue !== null ? Math.min(sumMinValue, sumMaxValue) : sumMinValue;
+  const sumMax = sumMinValue !== null && sumMaxValue !== null ? Math.max(sumMinValue, sumMaxValue) : sumMaxValue;
+
   return {
-    sumMin: parseNumber(els.sumMin.value),
-    sumMax: parseNumber(els.sumMax.value),
+    sumMin,
+    sumMax,
     oddCount: getSelectedCount(els.oddCount),
     evenCount: getSelectedCount(els.evenCount),
     smallCount: getSelectedCount(els.smallCount),
@@ -1127,6 +1134,8 @@ function autoUpdate() {
   clearTimeout(autoTimer);
   autoTimer = setTimeout(() => {
     setGenerateStatus("計算中…");
+    if (els.sumMinLabel) els.sumMinLabel.textContent = String(els.sumMin.value);
+    if (els.sumMaxLabel) els.sumMaxLabel.textContent = String(els.sumMax.value);
     updateAvailableCount();
     const sets = generateSets();
     if (sets.length) {
