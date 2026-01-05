@@ -509,9 +509,29 @@ body {
 
 .count-line {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.count-line-head {
+  display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
+}
+
+.count-line-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.count-line-list .ball {
+  width: 30px;
+  height: 30px;
+  font-size: 0.7rem;
 }
 
 .count-option {
@@ -645,5 +665,11 @@ body {
 
   .count-option input {
     transform: scale(0.9);
+  }
+
+  .count-line-list .ball {
+    width: 26px;
+    height: 26px;
+    font-size: 0.6rem;
   }
 }

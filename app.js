@@ -67,6 +67,18 @@ const els = {
   redCount: document.getElementById("redCount"),
   blueCount: document.getElementById("blueCount"),
   greenCount: document.getElementById("greenCount"),
+  oddList: document.getElementById("oddList"),
+  evenList: document.getElementById("evenList"),
+  smallList: document.getElementById("smallList"),
+  bigList: document.getElementById("bigList"),
+  redList: document.getElementById("redList"),
+  blueList: document.getElementById("blueList"),
+  greenList: document.getElementById("greenList"),
+  metalList: document.getElementById("metalList"),
+  woodList: document.getElementById("woodList"),
+  waterList: document.getElementById("waterList"),
+  fireList: document.getElementById("fireList"),
+  earthList: document.getElementById("earthList"),
   metalCount: document.getElementById("metalCount"),
   woodCount: document.getElementById("woodCount"),
   waterCount: document.getElementById("waterCount"),
@@ -249,6 +261,7 @@ function buildExcluded() {
   updateAvailableCount();
   renderNumberBoard();
   renderExcludedSummary();
+  renderCategoryLists();
 }
 
 function updateAvailableCount() {
@@ -494,6 +507,40 @@ function renderNumberBoard() {
       ball.classList.remove("excluded");
     }
   });
+}
+
+function renderCategoryLists() {
+  const basePool = [];
+  for (let i = 1; i <= 49; i += 1) {
+    if (!state.excluded.has(i)) basePool.push(i);
+  }
+
+  const renderList = (container, nums) => {
+    if (!container) return;
+    container.innerHTML = "";
+    nums.forEach((n) => {
+      const ball = document.createElement("span");
+      ball.className = `ball ${getColorClass(n)} with-element`;
+      ball.innerHTML = `
+        <span>${pad2(n)}</span>
+        <span class="element-inner">${getElementTag(n)}</span>
+      `;
+      container.appendChild(ball);
+    });
+  };
+
+  renderList(els.oddList, basePool.filter((n) => n % 2 === 1));
+  renderList(els.evenList, basePool.filter((n) => n % 2 === 0));
+  renderList(els.smallList, basePool.filter((n) => n <= 24));
+  renderList(els.bigList, basePool.filter((n) => n >= 25));
+  renderList(els.redList, basePool.filter((n) => getColorClass(n) === "red"));
+  renderList(els.blueList, basePool.filter((n) => getColorClass(n) === "blue"));
+  renderList(els.greenList, basePool.filter((n) => getColorClass(n) === "green"));
+  renderList(els.metalList, basePool.filter((n) => getElementTag(n) === "金"));
+  renderList(els.woodList, basePool.filter((n) => getElementTag(n) === "木"));
+  renderList(els.waterList, basePool.filter((n) => getElementTag(n) === "水"));
+  renderList(els.fireList, basePool.filter((n) => getElementTag(n) === "火"));
+  renderList(els.earthList, basePool.filter((n) => getElementTag(n) === "土"));
 }
 
 function pickRandomSet(pool) {
@@ -1153,6 +1200,7 @@ function autoUpdate() {
     setGenerateStatus("計算中…");
     updateSumRangeUI();
     updateAvailableCount();
+    renderCategoryLists();
     const sets = generateSets();
     if (sets.length) {
       renderResults(sets);
