@@ -389,6 +389,11 @@ body {
   margin: 0;
 }
 
+.mini-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .draw-list {
   display: grid;
   gap: 12px;

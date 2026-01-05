@@ -77,17 +77,35 @@
         </div>
 
         <div class="field line">
-          <label>大數(25-49)數量 <span class="note">（每注有幾多個25-49既大號碼）</span></label>
-          <select id="bigCount">
-            <option value="" selected>唔限制</option>
-            <option value="0">0 個</option>
-            <option value="1">1 個</option>
-            <option value="2">2 個</option>
-            <option value="3">3 個</option>
-            <option value="4">4 個</option>
-            <option value="5">5 個</option>
-            <option value="6">6 個</option>
-          </select>
+          <label>細號碼(1-24) / 大號碼(25-49)</label>
+          <div class="inline">
+            <div class="inline">
+              <label class="mini-label" for="smallCount">細號碼</label>
+              <select id="smallCount">
+                <option value="" selected>無限制</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+            <div class="inline">
+              <label class="mini-label" for="bigCount">大號碼</label>
+              <select id="bigCount">
+                <option value="" selected>無限制</option>
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div class="field line">

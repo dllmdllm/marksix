@@ -75,6 +75,7 @@ const els = {
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
   oddCount: document.getElementById("oddCount"),
+  smallCount: document.getElementById("smallCount"),
   bigCount: document.getElementById("bigCount"),
   maxConsecutive: document.getElementById("maxConsecutive"),
   maxTail: document.getElementById("maxTail"),
@@ -497,6 +498,7 @@ function readFilters() {
     sumMin: parseNumber(els.sumMin.value),
     sumMax: parseNumber(els.sumMax.value),
     oddCount: parseNumber(els.oddCount.value),
+    smallCount: parseNumber(els.smallCount?.value),
     bigCount: parseNumber(els.bigCount.value),
     maxConsecutive:
       parseNumber(els.maxConsecutive.value) === null
@@ -566,6 +568,7 @@ async function countCombinations(pool, filters, token) {
   const prefix = new Array(n + 1).fill(0);
   const suffixOdd = new Array(n + 1).fill(0);
   const suffixBig = new Array(n + 1).fill(0);
+  const suffixSmall = new Array(n + 1).fill(0);
   const suffixRowsMask = new Array(n + 1).fill(0);
   const suffixColorsMask = new Array(n + 1).fill(0);
 
@@ -575,6 +578,7 @@ async function countCombinations(pool, filters, token) {
   for (let i = n - 1; i >= 0; i -= 1) {
     suffixOdd[i] = suffixOdd[i + 1] + (pool[i] % 2 === 1 ? 1 : 0);
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
+    suffixSmall[i] = suffixSmall[i + 1] + (pool[i] <= 24 ? 1 : 0);
     suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
     suffixColorsMask[i] = suffixColorsMask[i + 1] | colorMaskForNum(pool[i]);
   }
@@ -588,6 +592,7 @@ async function countCombinations(pool, filters, token) {
     depth,
     sum,
     oddCount,
+    smallCount,
     bigCount,
     tails,
     lastNum,
@@ -602,6 +607,7 @@ async function countCombinations(pool, filters, token) {
       if (filters.sumMin !== null && sum < filters.sumMin) return 0;
       if (filters.sumMax !== null && sum > filters.sumMax) return 0;
       if (filters.oddCount !== null && oddCount !== filters.oddCount) return 0;
+      if (filters.smallCount !== null && smallCount !== filters.smallCount) return 0;
       if (filters.bigCount !== null && bigCount !== filters.bigCount) return 0;
       if (filters.noAllOdd && oddCount === 6) return 0;
       if (filters.noAllEven && oddCount === 0) return 0;
@@ -640,6 +646,12 @@ async function countCombinations(pool, filters, token) {
       const minBig = bigCount + Math.max(0, remaining - smallRemaining);
       if (filters.bigCount < minBig || filters.bigCount > maxBig) return 0;
     }
+    if (filters.smallCount !== null) {
+      const maxSmall = smallCount + Math.min(remaining, suffixSmall[start]);
+      const bigRemaining = (n - start) - suffixSmall[start];
+      const minSmall = smallCount + Math.max(0, remaining - bigRemaining);
+      if (filters.smallCount < minSmall || filters.smallCount > maxSmall) return 0;
+    }
 
     if (filters.noAllOdd || filters.noAllEven) {
       if (oddCount === 0 && suffixOdd[start] === 0) return 0;
@@ -660,6 +672,7 @@ async function countCombinations(pool, filters, token) {
       const num = pool[i];
       const nextSum = sum + num;
       const nextOdd = oddCount + (num % 2 === 1 ? 1 : 0);
+      const nextSmall = smallCount + (num <= 24 ? 1 : 0);
       const nextBig = bigCount + (num >= 25 ? 1 : 0);
       const tail = num % 10;
       const nextTails = tails.slice();
@@ -684,6 +697,7 @@ async function countCombinations(pool, filters, token) {
         depth + 1,
         nextSum,
         nextOdd,
+        nextSmall,
         nextBig,
         nextTails,
         num,
@@ -696,7 +710,7 @@ async function countCombinations(pool, filters, token) {
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -711,6 +725,8 @@ function isValid(nums, filters) {
 
   const bigCount = nums.filter((n) => n >= 25).length;
   if (filters.bigCount !== null && bigCount !== filters.bigCount) return false;
+  const smallCount = nums.filter((n) => n <= 24).length;
+  if (filters.smallCount !== null && smallCount !== filters.smallCount) return false;
 
   if (maxConsecutiveRun(nums) > filters.maxConsecutive) return false;
   if (filters.maxTail !== null && maxTailCount(nums) > filters.maxTail) {
@@ -820,6 +836,42 @@ els.lastN.addEventListener("change", () => {
   fetchDraws(value);
 });
 
+let syncingSize = false;
+
+function syncBigSmall(changed) {
+  if (syncingSize) return;
+  syncingSize = true;
+  const smallVal = parseNumber(els.smallCount?.value);
+  const bigVal = parseNumber(els.bigCount?.value);
+  if (changed === "small" && smallVal !== null) {
+    const other = 6 - smallVal;
+    if (other >= 0 && other <= 6) {
+      els.bigCount.value = String(other);
+    }
+  }
+  if (changed === "big" && bigVal !== null) {
+    const other = 6 - bigVal;
+    if (other >= 0 && other <= 6) {
+      els.smallCount.value = String(other);
+    }
+  }
+  syncingSize = false;
+}
+
+if (els.smallCount) {
+  els.smallCount.addEventListener("change", () => {
+    syncBigSmall("small");
+    autoUpdate();
+  });
+}
+
+if (els.bigCount) {
+  els.bigCount.addEventListener("change", () => {
+    syncBigSmall("big");
+    autoUpdate();
+  });
+}
+
 function handleExcludeChange() {
   buildExcluded();
   autoUpdate();
@@ -862,7 +914,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
   els.sumMin,
   els.sumMax,
   els.oddCount,
-  els.bigCount,
   els.maxConsecutive,
   els.maxTail,
   els.noAllOdd,
