@@ -57,13 +57,13 @@
           <label>6個號碼總和（一般參考可以設喺 90–210 之間，中心位大約 150 左右）</label>
           <div class="sum-range" id="sumRange">
             <div class="range-bar">
-              <input id="sumMin" type="range" min="21" max="279" value="100" />
-              <input id="sumMax" type="range" min="21" max="279" value="170" />
+              <input id="sumMin" type="range" min="21" max="279" value="90" />
+              <input id="sumMax" type="range" min="21" max="279" value="210" />
             </div>
             <div class="range-values">
-              <span class="range-pill" id="sumMinLabel">100</span>
+              <span class="range-pill" id="sumMinLabel">90</span>
               <span class="sep">–</span>
-              <span class="range-pill" id="sumMaxLabel">170</span>
+              <span class="range-pill" id="sumMaxLabel">210</span>
             </div>
           </div>
         </div>
@@ -75,14 +75,15 @@
               <div class="count-line-head">
                 <label class="mini-label">單數</label>
                 <div id="oddCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0 冇單數</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6 全單數</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
                 </div>
+                <span id="oddNote" class="count-note"></span>
               </div>
               <div id="oddList" class="count-line-list"></div>
             </div>
@@ -90,14 +91,15 @@
               <div class="count-line-head">
                 <label class="mini-label">雙數</label>
                 <div id="evenCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0 冇雙數</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
                   <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6 全雙數</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
                 </div>
+                <span id="evenNote" class="count-note"></span>
               </div>
               <div id="evenList" class="count-line-list"></div>
             </div>

@@ -140,6 +140,27 @@ body {
   height: 26px;
 }
 
+.range-bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #faf5ec 0%,
+    #faf5ec calc(var(--sum-min, 0%) + 10px),
+    var(--accent-2) calc(var(--sum-min, 0%) + 10px),
+    var(--accent-2) calc(var(--sum-max, 100%) - 10px),
+    #faf5ec calc(var(--sum-max, 100%) - 10px),
+    #faf5ec 100%
+  );
+  z-index: 1;
+}
+
 .range-bar input[type="range"] {
   position: absolute;
   left: 0;
@@ -150,6 +171,15 @@ body {
   background: transparent;
   pointer-events: none;
   -webkit-appearance: none;
+  z-index: 2;
+}
+
+#sumMin {
+  z-index: 3;
+}
+
+#sumMax {
+  z-index: 2;
 }
 
 .range-bar input[type="range"]::-webkit-slider-thumb {
@@ -176,29 +206,13 @@ body {
 .range-bar input[type="range"]::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    #e9dfcf 0%,
-    #e9dfcf calc(var(--sum-min, 0%) - 0.5%),
-    var(--accent-2) calc(var(--sum-min, 0%) - 0.5%),
-    var(--accent-2) calc(var(--sum-max, 100%) + 0.5%),
-    #e9dfcf calc(var(--sum-max, 100%) + 0.5%),
-    #e9dfcf 100%
-  );
+  background: transparent;
 }
 
 .range-bar input[type="range"]::-moz-range-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    #e9dfcf 0%,
-    #e9dfcf calc(var(--sum-min, 0%) - 0.5%),
-    var(--accent-2) calc(var(--sum-min, 0%) - 0.5%),
-    var(--accent-2) calc(var(--sum-max, 100%) + 0.5%),
-    #e9dfcf calc(var(--sum-max, 100%) + 0.5%),
-    #e9dfcf 100%
-  );
+  background: transparent;
 }
 
 .range-values {
@@ -520,6 +534,12 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
+}
+
+.count-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .count-line-list {

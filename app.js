@@ -67,6 +67,8 @@ const els = {
   greenCount: document.getElementById("greenCount"),
   oddList: document.getElementById("oddList"),
   evenList: document.getElementById("evenList"),
+  oddNote: document.getElementById("oddNote"),
+  evenNote: document.getElementById("evenNote"),
   smallList: document.getElementById("smallList"),
   bigList: document.getElementById("bigList"),
   redList: document.getElementById("redList"),
@@ -1073,6 +1075,23 @@ els.lastN.addEventListener("change", () => {
 
 let syncingSize = false;
 
+function updateOddEvenNotes() {
+  if (!els.oddNote || !els.evenNote) return;
+  const oddVal = getSelectedCount(els.oddCount);
+  const evenVal = getSelectedCount(els.evenCount);
+  let oddText = "";
+  let evenText = "";
+
+  if (oddVal === 6) oddText = "全單數";
+  else if (oddVal === 0) oddText = "全雙數";
+
+  if (evenVal === 6) evenText = "全雙數";
+  else if (evenVal === 0) evenText = "全單數";
+
+  els.oddNote.textContent = oddText ? `(${oddText})` : "";
+  els.evenNote.textContent = evenText ? `(${evenText})` : "";
+}
+
 function updateCountConstraints(source) {
   if (syncingSize) return;
   syncingSize = true;
@@ -1108,12 +1127,16 @@ function updateCountConstraints(source) {
   } else if (source === "big" && bigVal !== null && smallVal === null && maxSmall !== null) {
     setSelectedCount(els.smallCount, maxSmall);
     maxBig = 6 - maxSmall;
-  } else if (source === "odd" && oddVal !== null && evenVal === null && maxEven !== null) {
-    setSelectedCount(els.evenCount, maxEven);
-    maxOdd = 6 - maxEven;
-  } else if (source === "even" && evenVal !== null && oddVal === null && maxOdd !== null) {
-    setSelectedCount(els.oddCount, maxOdd);
-    maxEven = 6 - maxOdd;
+  } else if (source === "odd" && oddVal !== null) {
+    const other = 6 - oddVal;
+    setSelectedCount(els.evenCount, other);
+    maxEven = other;
+    maxOdd = oddVal;
+  } else if (source === "even" && evenVal !== null) {
+    const other = 6 - evenVal;
+    setSelectedCount(els.oddCount, other);
+    maxOdd = other;
+    maxEven = evenVal;
   }
 
   const cleared =
@@ -1131,6 +1154,7 @@ function updateCountConstraints(source) {
     setCountDisabled(els.earthCount, maxEarth);
   syncingSize = false;
   if (cleared) updateCountConstraints();
+  updateOddEvenNotes();
 }
 
 function bindCountGroup(container, source) {
