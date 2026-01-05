@@ -536,6 +536,10 @@ body {
   flex-wrap: nowrap;
 }
 
+.count-line-head .mini-label {
+  min-width: 52px;
+}
+
 .count-note {
   font-size: 0.85rem;
   color: var(--muted);
@@ -546,6 +550,7 @@ body {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
+  padding-left: 62px;
 }
 
 .count-line-list .ball {
