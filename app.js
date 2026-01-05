@@ -60,8 +60,6 @@ const els = {
   comboCount: document.getElementById("comboCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
-  noAllOdd: document.getElementById("noAllOdd"),
-  noAllEven: document.getElementById("noAllEven"),
   noMultiplicationCombo: document.getElementById("noMultiplicationCombo"),
   minRows: document.getElementById("minRows"),
   redCount: document.getElementById("redCount"),
@@ -620,8 +618,8 @@ function readFilters() {
         ? 6
         : parseNumber(els.maxConsecutive.value),
     maxTail: parseNumber(els.maxTail.value),
-    noAllOdd: !!els.noAllOdd?.checked,
-    noAllEven: !!els.noAllEven?.checked,
+    noAllOdd: false,
+    noAllEven: false,
     noMultiplicationCombo: !!els.noMultiplicationCombo?.checked,
     minRows: parseNumber(els.minRows?.value) || 1,
     colorCounts,
@@ -766,8 +764,6 @@ async function countCombinations(pool, filters, token) {
       if (waterTarget !== null && waterCount !== waterTarget) return 0;
       if (fireTarget !== null && fireCount !== fireTarget) return 0;
       if (earthTarget !== null && earthCount !== earthTarget) return 0;
-      if (filters.noAllOdd && oddCount === 6) return 0;
-      if (filters.noAllEven && oddCount === 0) return 0;
       if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
       if (filters.noMultiplicationCombo) {
@@ -863,11 +859,6 @@ async function countCombinations(pool, filters, token) {
       if (earthTarget < minEarth || earthTarget > maxEarth) return 0;
     }
 
-    if (filters.noAllOdd || filters.noAllEven) {
-      if (oddCount === 0 && suffixOdd[start] === 0) return 0;
-      if (oddCount === depth && (n - start - suffixOdd[start]) === 0) return 0;
-    }
-
     if (filters.minRows > 1) {
       const possibleRows = popcount(rowsMask | suffixRowsMask[start]);
       if (possibleRows < filters.minRows) return 0;
@@ -943,8 +934,6 @@ function isValid(nums, filters) {
   const oddCount = nums.filter((n) => n % 2 === 1).length;
   if (filters.oddCount !== null && oddCount !== filters.oddCount) return false;
   if (filters.evenCount !== null && (6 - oddCount) !== filters.evenCount) return false;
-  if (filters.noAllOdd && oddCount === 6) return false;
-  if (filters.noAllEven && oddCount === 0) return false;
 
   const bigCount = nums.filter((n) => n >= 25).length;
   if (filters.bigCount !== null && bigCount !== filters.bigCount) return false;
@@ -1217,8 +1206,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
   els.sumMax,
   els.maxConsecutive,
   els.maxTail,
-  els.noAllOdd,
-  els.noAllEven,
   els.noMultiplicationCombo,
   els.minRows,
   els.ticketCount

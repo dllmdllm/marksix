@@ -541,6 +541,7 @@ body {
 .count-option span {
   min-width: 14px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .count-option input:disabled + span {
