@@ -74,6 +74,7 @@ const els = {
   earthCount: document.getElementById("earthCount"),
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
+  sumRange: document.getElementById("sumRange"),
   sumMinLabel: document.getElementById("sumMinLabel"),
   sumMaxLabel: document.getElementById("sumMaxLabel"),
   oddCount: document.getElementById("oddCount"),
@@ -263,6 +264,22 @@ function setComboCount(message) {
 
 function setFetchStatus(message) {
   els.fetchStatus.textContent = message;
+}
+
+function updateSumRangeUI() {
+  if (!els.sumMin || !els.sumMax || !els.sumRange) return;
+  const min = Number(els.sumMin.min || 0);
+  const max = Number(els.sumMin.max || 200);
+  const minVal = Number(els.sumMin.value);
+  const maxVal = Number(els.sumMax.value);
+  const low = Math.min(minVal, maxVal);
+  const high = Math.max(minVal, maxVal);
+  if (els.sumMinLabel) els.sumMinLabel.textContent = String(low);
+  if (els.sumMaxLabel) els.sumMaxLabel.textContent = String(high);
+  const minPct = ((low - min) / (max - min)) * 100;
+  const maxPct = ((high - min) / (max - min)) * 100;
+  els.sumRange.style.setProperty("--sum-min", `${minPct}%`);
+  els.sumRange.style.setProperty("--sum-max", `${maxPct}%`);
 }
 
 function renderExcludedSummary() {
@@ -1134,8 +1151,7 @@ function autoUpdate() {
   clearTimeout(autoTimer);
   autoTimer = setTimeout(() => {
     setGenerateStatus("計算中…");
-    if (els.sumMinLabel) els.sumMinLabel.textContent = String(els.sumMin.value);
-    if (els.sumMaxLabel) els.sumMaxLabel.textContent = String(els.sumMax.value);
+    updateSumRangeUI();
     updateAvailableCount();
     const sets = generateSets();
     if (sets.length) {
@@ -1166,4 +1182,5 @@ els.generateBtn.addEventListener("click", autoUpdate);
 
 renderNumberBoard();
 updateCountConstraints();
+updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
