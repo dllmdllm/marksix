@@ -1,4 +1,5 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
+const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
 
 const DRAW_FRAGMENT = `fragment lotteryDrawsFragment on LotteryDraw {
     id
@@ -99,7 +100,12 @@ const els = {
   ticketCount: document.getElementById("ticketCount"),
   generateStatus: document.getElementById("generateStatus"),
   resultList: document.getElementById("resultList"),
-  availableCount: document.getElementById("availableCount")
+  availableCount: document.getElementById("availableCount"),
+  analysisN: document.getElementById("analysisN"),
+  analysisStatus: document.getElementById("analysisStatus"),
+  analysisCold: document.getElementById("analysisCold"),
+  analysisHot: document.getElementById("analysisHot"),
+  analysisCounts: document.getElementById("analysisCounts")
 };
 
 const state = {
@@ -107,7 +113,8 @@ const state = {
   excluded: new Set(),
   lastGenerated: null,
   countToken: 0,
-  latestInfo: null
+  latestInfo: null,
+  analysisDraws: []
 };
 
 const COLOR_GROUPS = {
@@ -480,6 +487,20 @@ function getElementTag(num) {
   return "";
 }
 
+function renderBallList(container, nums) {
+  if (!container) return;
+  container.innerHTML = "";
+  nums.forEach((n) => {
+    const ball = document.createElement("span");
+    ball.className = `ball ${getColorClass(n)} with-element`;
+    ball.innerHTML = `
+      <span>${pad2(n)}</span>
+      <span class="element-inner">${getElementTag(n)}</span>
+    `;
+    container.appendChild(ball);
+  });
+}
+
 function renderNumberBoard() {
   if (!els.numberBoard) return;
   if (!els.numberBoard.children.length) {
@@ -515,32 +536,119 @@ function renderCategoryLists() {
     if (!state.excluded.has(i)) basePool.push(i);
   }
 
-  const renderList = (container, nums) => {
-    if (!container) return;
-    container.innerHTML = "";
-    nums.forEach((n) => {
-      const ball = document.createElement("span");
-      ball.className = `ball ${getColorClass(n)} with-element`;
-      ball.innerHTML = `
-        <span>${pad2(n)}</span>
-        <span class="element-inner">${getElementTag(n)}</span>
-      `;
-      container.appendChild(ball);
-    });
-  };
+  renderBallList(els.oddList, basePool.filter((n) => n % 2 === 1));
+  renderBallList(els.evenList, basePool.filter((n) => n % 2 === 0));
+  renderBallList(els.smallList, basePool.filter((n) => n <= 24));
+  renderBallList(els.bigList, basePool.filter((n) => n >= 25));
+  renderBallList(els.redList, basePool.filter((n) => getColorClass(n) === "red"));
+  renderBallList(els.blueList, basePool.filter((n) => getColorClass(n) === "blue"));
+  renderBallList(els.greenList, basePool.filter((n) => getColorClass(n) === "green"));
+  renderBallList(els.metalList, basePool.filter((n) => getElementTag(n) === "金"));
+  renderBallList(els.woodList, basePool.filter((n) => getElementTag(n) === "木"));
+  renderBallList(els.waterList, basePool.filter((n) => getElementTag(n) === "水"));
+  renderBallList(els.fireList, basePool.filter((n) => getElementTag(n) === "火"));
+  renderBallList(els.earthList, basePool.filter((n) => getElementTag(n) === "土"));
+}
 
-  renderList(els.oddList, basePool.filter((n) => n % 2 === 1));
-  renderList(els.evenList, basePool.filter((n) => n % 2 === 0));
-  renderList(els.smallList, basePool.filter((n) => n <= 24));
-  renderList(els.bigList, basePool.filter((n) => n >= 25));
-  renderList(els.redList, basePool.filter((n) => getColorClass(n) === "red"));
-  renderList(els.blueList, basePool.filter((n) => getColorClass(n) === "blue"));
-  renderList(els.greenList, basePool.filter((n) => getColorClass(n) === "green"));
-  renderList(els.metalList, basePool.filter((n) => getElementTag(n) === "金"));
-  renderList(els.woodList, basePool.filter((n) => getElementTag(n) === "木"));
-  renderList(els.waterList, basePool.filter((n) => getElementTag(n) === "水"));
-  renderList(els.fireList, basePool.filter((n) => getElementTag(n) === "火"));
-  renderList(els.earthList, basePool.filter((n) => getElementTag(n) === "土"));
+function renderEmptyMessage(container, message) {
+  if (!container) return;
+  container.innerHTML = "";
+  const hint = document.createElement("span");
+  hint.className = "hint";
+  hint.textContent = message;
+  container.appendChild(hint);
+}
+
+function renderCountChips(container, entries) {
+  if (!container) return;
+  container.innerHTML = "";
+  entries.forEach(({ num, count }) => {
+    const chip = document.createElement("div");
+    chip.className = "count-chip";
+    chip.innerHTML = `
+      <span class="ball ${getColorClass(num)} with-element">
+        <span>${pad2(num)}</span>
+        <span class="element-inner">${getElementTag(num)}</span>
+      </span>
+      <span class="count-num">×${count}</span>
+    `;
+    container.appendChild(chip);
+  });
+}
+
+function updateAnalysisView() {
+  if (!els.analysisCold || !els.analysisHot || !els.analysisCounts) return;
+  if (!state.analysisDraws.length) {
+    renderEmptyMessage(els.analysisCold, "未有資料");
+    renderEmptyMessage(els.analysisHot, "未有資料");
+    renderEmptyMessage(els.analysisCounts, "未有資料");
+    return;
+  }
+
+  const n = parseNumber(els.analysisN?.value) || 20;
+  const sorted = [...state.analysisDraws].sort((a, b) => {
+    const dtA = new Date(normalizeDateString(a.drawDate || "")).getTime() || 0;
+    const dtB = new Date(normalizeDateString(b.drawDate || "")).getTime() || 0;
+    return dtB - dtA;
+  });
+  const slice = sorted.slice(0, n);
+  const counts = Array.from({ length: 50 }, () => 0);
+  slice.forEach((draw) => {
+    (draw.numbers || []).forEach((num) => {
+      if (num >= 1 && num <= 49) counts[num] += 1;
+    });
+  });
+
+  const cold = [];
+  const ranked = [];
+  for (let i = 1; i <= 49; i += 1) {
+    if (counts[i] === 0) cold.push(i);
+    ranked.push({ num: i, count: counts[i] });
+  }
+
+  ranked.sort((a, b) => b.count - a.count || a.num - b.num);
+  const hot = ranked.filter((item) => item.count > 0).slice(0, 10).map((item) => item.num);
+  const topCounts = ranked.filter((item) => item.count > 0).slice(0, 15);
+
+  if (cold.length) {
+    renderBallList(els.analysisCold, cold);
+  } else {
+    renderEmptyMessage(els.analysisCold, "最近已全部出現過");
+  }
+
+  if (hot.length) {
+    renderBallList(els.analysisHot, hot);
+  } else {
+    renderEmptyMessage(els.analysisHot, "未有熱門");
+  }
+
+  if (topCounts.length) {
+    renderCountChips(els.analysisCounts, topCounts);
+  } else {
+    renderEmptyMessage(els.analysisCounts, "未有次數");
+  }
+
+  if (els.analysisStatus) {
+    els.analysisStatus.textContent = `已載入 ${state.analysisDraws.length} 期｜最近 ${slice.length} 期`;
+  }
+}
+
+async function fetchAnalysisData() {
+  if (!els.analysisStatus) return;
+  els.analysisStatus.textContent = "連接中…";
+  try {
+    const response = await fetch(LOCAL_API, { cache: "no-store" });
+    if (!response.ok) throw new Error("fetch_failed");
+    const data = await response.json();
+    state.analysisDraws = Array.isArray(data.draws) ? data.draws : [];
+    updateAnalysisView();
+  } catch (err) {
+    state.analysisDraws = [];
+    if (els.analysisStatus) {
+      els.analysisStatus.textContent = "未連接本地資料";
+    }
+    updateAnalysisView();
+  }
 }
 
 function pickRandomSet(pool) {
@@ -1073,6 +1181,10 @@ els.lastN.addEventListener("change", () => {
   fetchDraws(value);
 });
 
+if (els.analysisN) {
+  els.analysisN.addEventListener("change", updateAnalysisView);
+}
+
 let syncingSize = false;
 
 function updateOddEvenNotes() {
@@ -1243,3 +1355,4 @@ renderNumberBoard();
 updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
+fetchAnalysisData();

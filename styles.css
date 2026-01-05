@@ -574,6 +574,59 @@ body {
   margin-top: 12px;
 }
 
+.analysis-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.analysis-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 12px;
+}
+
+.analysis-block h3 {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.ball-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.analysis-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #eadfcb;
+  background: #ffffff;
+}
+
+.count-chip .ball {
+  width: 26px;
+  height: 26px;
+  font-size: 0.65rem;
+}
+
+.count-chip .count-num {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .draw {
   border: 1px dashed #e0c9b0;
   border-radius: 12px;
