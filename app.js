@@ -1,5 +1,6 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
+const LOCAL_IMPORT_API = "http://127.0.0.1:5177/api/marksix/import";
 
 const DRAW_FRAGMENT = `fragment lotteryDrawsFragment on LotteryDraw {
     id
@@ -105,7 +106,10 @@ const els = {
   analysisStatus: document.getElementById("analysisStatus"),
   analysisCold: document.getElementById("analysisCold"),
   analysisHot: document.getElementById("analysisHot"),
-  analysisCounts: document.getElementById("analysisCounts")
+  analysisCounts: document.getElementById("analysisCounts"),
+  syncAll: document.getElementById("syncAll"),
+  syncLatest: document.getElementById("syncLatest"),
+  syncStatus: document.getElementById("syncStatus")
 };
 
 const state = {
@@ -400,6 +404,113 @@ function setGenerateStatus(message) {
   els.generateStatus.textContent = message;
 }
 
+function filterResultDraws(draws) {
+  return (draws || []).filter(
+    (draw) => draw?.status === "Result" && (draw.drawResult?.drawnNo || []).length
+  );
+}
+
+async function requestDraws(variables) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: QUERY,
+      variables,
+      operationName: "marksixResult"
+    })
+  });
+  const data = await res.json();
+  if (data.errors) {
+    throw new Error(data.errors.map((e) => e.message).join(" | "));
+  }
+  return data.data?.lotteryDraws || [];
+}
+
+async function postLocalImport(draws) {
+  const res = await fetch(LOCAL_IMPORT_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ draws })
+  });
+  if (!res.ok) {
+    throw new Error(`本地匯入失敗 (${res.status})`);
+  }
+  return res.json();
+}
+
+function setSyncStatus(message) {
+  if (!els.syncStatus) return;
+  els.syncStatus.textContent = message;
+}
+
+function setSyncDisabled(disabled) {
+  if (els.syncAll) els.syncAll.disabled = disabled;
+  if (els.syncLatest) els.syncLatest.disabled = disabled;
+}
+
+let isSyncing = false;
+
+async function syncAllDraws() {
+  if (isSyncing) return;
+  isSyncing = true;
+  setSyncDisabled(true);
+  try {
+    const startYear = 1993;
+    const endYear = new Date().getFullYear();
+    let appendedTotal = 0;
+    for (let year = startYear; year <= endYear; year += 1) {
+      setSyncStatus(`同步中…${year}`);
+      const start = `${year}0101`;
+      const end = `${year}1231`;
+      const draws = await requestDraws({
+        lastNDraw: null,
+        startDate: start,
+        endDate: end,
+        drawType: "All"
+      });
+      const resultDraws = filterResultDraws(draws);
+      if (resultDraws.length) {
+        const res = await postLocalImport(resultDraws);
+        appendedTotal += res.appended || 0;
+      }
+    }
+    setSyncStatus(`同步完成，新增 ${appendedTotal} 期`);
+    fetchAnalysisData();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    setSyncStatus(`${msg} ➜ ✨ 同步失敗，請確認本地服務已開。`);
+  } finally {
+    isSyncing = false;
+    setSyncDisabled(false);
+  }
+}
+
+async function syncLatestDraws() {
+  if (isSyncing) return;
+  isSyncing = true;
+  setSyncDisabled(true);
+  try {
+    setSyncStatus("同步最新期數…");
+    const draws = await requestDraws({
+      lastNDraw: 30,
+      startDate: null,
+      endDate: null,
+      drawType: "All"
+    });
+    const resultDraws = filterResultDraws(draws);
+    const res = await postLocalImport(resultDraws);
+    setSyncStatus(`同步完成，新增 ${res.appended || 0} 期`);
+    fetchAnalysisData();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    setSyncStatus(`${msg} ➜ ✨ 同步失敗，請確認本地服務已開。`);
+  } finally {
+    isSyncing = false;
+    setSyncDisabled(false);
+  }
+}
+
 async function fetchDraws(n) {
   setFetchStatus("更新中…");
   try {
@@ -412,20 +523,7 @@ async function fetchDraws(n) {
       fetchLatestInfo();
       return;
     }
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: QUERY,
-        variables: { lastNDraw: n, drawType: "All" },
-        operationName: "marksixResult"
-      })
-    });
-    const data = await res.json();
-    if (data.errors) {
-      throw new Error(data.errors.map((e) => e.message).join(" | "));
-    }
-    state.draws = data.data?.lotteryDraws || [];
+    state.draws = await requestDraws({ lastNDraw: n, drawType: "All" });
     renderDraws();
     buildExcluded();
     setFetchStatus(`已更新：${state.draws.length} 期`);
@@ -1183,6 +1281,14 @@ els.lastN.addEventListener("change", () => {
 
 if (els.analysisN) {
   els.analysisN.addEventListener("change", updateAnalysisView);
+}
+
+if (els.syncAll) {
+  els.syncAll.addEventListener("click", syncAllDraws);
+}
+
+if (els.syncLatest) {
+  els.syncLatest.addEventListener("click", syncLatestDraws);
 }
 
 let syncingSize = false;

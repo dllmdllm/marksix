@@ -582,6 +582,29 @@ body {
   margin-top: 8px;
 }
 
+.analysis-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ghost-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #eadfcb;
+  background: #ffffff;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .analysis-grid {
   display: grid;
   gap: 14px;

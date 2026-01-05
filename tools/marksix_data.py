@@ -13,36 +13,36 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 API_URL = "https://info.cld.hkjc.com/graphql/base/"
 
 DRAW_FRAGMENT = """fragment lotteryDrawsFragment on LotteryDraw {
-  id
-  year
-  no
-  openDate
-  closeDate
-  drawDate
-  status
-  snowballCode
-  snowballName_ch
-  lotteryPool {
-    sell
-    totalInvestment
-    jackpot
-    estimatedPrize
-    derivedFirstPrizeDiv
-  }
-  drawResult {
-    drawnNo
-    xDrawnNo
-  }
-}"""
+    id
+    year
+    no
+    openDate
+    closeDate
+    drawDate
+    status
+    snowballCode
+    snowballName_ch
+    lotteryPool {
+      sell
+      totalInvestment
+      jackpot
+      estimatedPrize
+      derivedFirstPrizeDiv
+    }
+    drawResult {
+      drawnNo
+      xDrawnNo
+    }
+  }"""
 
 QUERY = f"""{DRAW_FRAGMENT}
 
-query marksixResult($lastNDraw: Int, $startDate: String, $endDate: String, $drawType: LotteryDrawType) {{
-  lotteryDraws(lastNDraw: $lastNDraw, startDate: $startDate, endDate: $endDate, drawType: $drawType) {{
-    ...lotteryDrawsFragment
-  }}
-}}
-"""
+        query marksixResult($lastNDraw: Int, $startDate: String, $endDate: String, $drawType: LotteryDrawType) {{
+            lotteryDraws(lastNDraw: $lastNDraw, startDate: $startDate, endDate: $endDate, drawType: $drawType) {{
+              ...lotteryDrawsFragment
+            }}
+        }}
+    """
 
 FIELDNAMES = [
     "year",
@@ -76,9 +76,24 @@ def api_post(variables):
             "operationName": "marksixResult"
         }
     ).encode("utf-8")
-    req = Request(API_URL, data=payload, headers={"Content-Type": "application/json"})
+    req = Request(
+        API_URL,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-apollo-operation-name": "marksixResult",
+            "apollo-require-preflight": "true",
+            "Accept": "application/json",
+            "Origin": "https://bet.hkjc.com",
+            "Referer": "https://bet.hkjc.com/",
+            "User-Agent": "Mozilla/5.0"
+        }
+    )
     with urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+        data = json.loads(resp.read().decode("utf-8"))
+        if data.get("errors"):
+            raise RuntimeError(data["errors"])
+        return data
 
 
 def parse_date(value):
@@ -186,6 +201,24 @@ def write_csv(path, rows):
         writer.writerows(rows)
 
 
+def import_draws(path, draws):
+    rows, keys = load_existing(path)
+    appended = 0
+    for draw in draws:
+        key = draw_key(draw)
+        if key in keys:
+            continue
+        row = row_from_draw(draw)
+        if not row.get("drawn1"):
+            continue
+        keys.add(key)
+        rows.append(row)
+        appended += 1
+    sort_rows(rows)
+    write_csv(path, rows)
+    return appended, len(rows)
+
+
 def download_all(path, start_year, end_year):
     rows = []
     keys = set()
@@ -269,7 +302,7 @@ def serve_api(path, port, auto_update=False, interval_hours=24):
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -278,7 +311,7 @@ def serve_api(path, port, auto_update=False, interval_hours=24):
         def do_OPTIONS(self):
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.end_headers()
 
@@ -291,6 +324,22 @@ def serve_api(path, port, auto_update=False, interval_hours=24):
                     "draws": rows
                 }
                 self._send(200, payload)
+                return
+            self._send(404, {"error": "Not Found"})
+
+        def do_POST(self):
+            if self.path.startswith("/api/marksix/import"):
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    raw = self.rfile.read(length).decode("utf-8")
+                    payload = json.loads(raw) if raw else {}
+                    draws = payload.get("draws", [])
+                    if not isinstance(draws, list):
+                        raise ValueError("draws must be a list")
+                    appended, total = import_draws(csv_path, draws)
+                    self._send(200, {"ok": True, "appended": appended, "total": total})
+                except Exception as exc:
+                    self._send(400, {"ok": False, "error": str(exc)})
                 return
             self._send(404, {"error": "Not Found"})
 
