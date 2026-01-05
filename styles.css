@@ -129,6 +129,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #faf5ec;
+  border: 1px solid #eadfcb;
 }
 
 .range-bar {
@@ -151,49 +155,49 @@ body {
 .range-bar input[type="range"]::-webkit-slider-thumb {
   pointer-events: auto;
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--accent-2);
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  border: 2px solid var(--accent-2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .range-bar input[type="range"]::-moz-range-thumb {
   pointer-events: auto;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--accent-2);
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+  border: 2px solid var(--accent-2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .range-bar input[type="range"]::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    #e6dbc9 0%,
-    #e6dbc9 calc(var(--sum-min, 0%) - 0.5%),
+    #e9dfcf 0%,
+    #e9dfcf calc(var(--sum-min, 0%) - 0.5%),
     var(--accent-2) calc(var(--sum-min, 0%) - 0.5%),
     var(--accent-2) calc(var(--sum-max, 100%) + 0.5%),
-    #e6dbc9 calc(var(--sum-max, 100%) + 0.5%),
-    #e6dbc9 100%
+    #e9dfcf calc(var(--sum-max, 100%) + 0.5%),
+    #e9dfcf 100%
   );
 }
 
 .range-bar input[type="range"]::-moz-range-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(
     to right,
-    #e6dbc9 0%,
-    #e6dbc9 calc(var(--sum-min, 0%) - 0.5%),
+    #e9dfcf 0%,
+    #e9dfcf calc(var(--sum-min, 0%) - 0.5%),
     var(--accent-2) calc(var(--sum-min, 0%) - 0.5%),
     var(--accent-2) calc(var(--sum-max, 100%) + 0.5%),
-    #e6dbc9 calc(var(--sum-max, 100%) + 0.5%),
-    #e6dbc9 100%
+    #e9dfcf calc(var(--sum-max, 100%) + 0.5%),
+    #e9dfcf 100%
   );
 }
 
@@ -203,6 +207,17 @@ body {
   gap: 8px;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.range-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e0d4bf;
+  background: #fffdf8;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 52px;
+  text-align: center;
 }
 
 .line {
