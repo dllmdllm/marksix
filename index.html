@@ -159,20 +159,44 @@
         </div>
 
         <div class="field line">
-          <label>必須包含顏色</label>
-          <div class="inline row-picks">
-            <label class="check">
-              <input id="colorRed" type="checkbox" />
-              紅
-            </label>
-            <label class="check">
-              <input id="colorBlue" type="checkbox" />
-              藍
-            </label>
-            <label class="check">
-              <input id="colorGreen" type="checkbox" />
-              綠
-            </label>
+          <label>紅 / 藍 / 綠 數量</label>
+          <div class="inline">
+            <div class="inline">
+              <label class="mini-label">紅</label>
+              <div id="redCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">藍</label>
+              <div id="blueCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">綠</label>
+              <div id="greenCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -197,28 +221,68 @@
         </div>
 
         <div class="field line">
-          <label>只出所選五行</label>
-          <div class="inline row-picks">
-            <label class="check">
-              <input id="needMetal" type="checkbox" />
-              金
-            </label>
-            <label class="check">
-              <input id="needWood" type="checkbox" />
-              木
-            </label>
-            <label class="check">
-              <input id="needWater" type="checkbox" />
-              水
-            </label>
-            <label class="check">
-              <input id="needFire" type="checkbox" />
-              火
-            </label>
-            <label class="check">
-              <input id="needEarth" type="checkbox" />
-              土
-            </label>
+          <label>金 / 木 / 水 / 火 / 土 數量</label>
+          <div class="inline">
+            <div class="inline">
+              <label class="mini-label">金</label>
+              <div id="metalCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">木</label>
+              <div id="woodCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">水</label>
+              <div id="waterCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">火</label>
+              <div id="fireCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
+            <div class="inline">
+              <label class="mini-label">土</label>
+              <div id="earthCount" class="count-options">
+                <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
+                <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
+              </div>
+            </div>
           </div>
         </div>
       </section>

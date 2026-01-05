@@ -64,14 +64,14 @@ const els = {
   noAllEven: document.getElementById("noAllEven"),
   noMultiplicationCombo: document.getElementById("noMultiplicationCombo"),
   minRows: document.getElementById("minRows"),
-  colorRed: document.getElementById("colorRed"),
-  colorBlue: document.getElementById("colorBlue"),
-  colorGreen: document.getElementById("colorGreen"),
-  needMetal: document.getElementById("needMetal"),
-  needWood: document.getElementById("needWood"),
-  needWater: document.getElementById("needWater"),
-  needFire: document.getElementById("needFire"),
-  needEarth: document.getElementById("needEarth"),
+  redCount: document.getElementById("redCount"),
+  blueCount: document.getElementById("blueCount"),
+  greenCount: document.getElementById("greenCount"),
+  metalCount: document.getElementById("metalCount"),
+  woodCount: document.getElementById("woodCount"),
+  waterCount: document.getElementById("waterCount"),
+  fireCount: document.getElementById("fireCount"),
+  earthCount: document.getElementById("earthCount"),
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
   oddCount: document.getElementById("oddCount"),
@@ -213,12 +213,17 @@ function setSelectedCount(container, value) {
 function setCountDisabled(container, maxAllowed) {
   if (!container) return;
   const inputs = [...container.querySelectorAll("input[type=checkbox]")];
+  let cleared = false;
   inputs.forEach((input) => {
     const value = Number(input.dataset.count);
     const disabled = maxAllowed !== null && value > maxAllowed;
     input.disabled = disabled;
-    if (disabled && input.checked) input.checked = false;
+    if (disabled && input.checked) {
+      input.checked = false;
+      cleared = true;
+    }
   });
+  return cleared;
 }
 
 function getRowIndex(num) {
@@ -443,13 +448,6 @@ function getElementTag(num) {
   return "";
 }
 
-function colorMaskForNum(num) {
-  const color = getColorClass(num);
-  if (color === "red") return 1;
-  if (color === "blue") return 2;
-  return 4;
-}
-
 function renderNumberBoard() {
   if (!els.numberBoard) return;
   if (!els.numberBoard.children.length) {
@@ -512,15 +510,18 @@ function maxTailCount(nums) {
 }
 
 function readFilters() {
-  const colors = [els.colorRed, els.colorBlue, els.colorGreen]
-    .filter((input) => input && input.checked)
-    .map((input) => input.id.replace("color", "").toLowerCase());
-  const elements = [];
-  if (els.needMetal?.checked) elements.push("金");
-  if (els.needWood?.checked) elements.push("木");
-  if (els.needWater?.checked) elements.push("水");
-  if (els.needFire?.checked) elements.push("火");
-  if (els.needEarth?.checked) elements.push("土");
+  const colorCounts = {
+    red: getSelectedCount(els.redCount),
+    blue: getSelectedCount(els.blueCount),
+    green: getSelectedCount(els.greenCount)
+  };
+  const elementCounts = {
+    metal: getSelectedCount(els.metalCount),
+    wood: getSelectedCount(els.woodCount),
+    water: getSelectedCount(els.waterCount),
+    fire: getSelectedCount(els.fireCount),
+    earth: getSelectedCount(els.earthCount)
+  };
 
   return {
     sumMin: parseNumber(els.sumMin.value),
@@ -538,21 +539,32 @@ function readFilters() {
     noAllEven: !!els.noAllEven?.checked,
     noMultiplicationCombo: !!els.noMultiplicationCombo?.checked,
     minRows: parseNumber(els.minRows?.value) || 1,
-    colors,
-    elements
+    colorCounts,
+    elementCounts
   };
 }
 
 function getFilteredPool(filters) {
   const pool = [];
-  const allowedElements = filters.elements;
+  const colorCounts = filters.colorCounts;
+  const hasColorLimit = Object.values(colorCounts).some((val) => val !== null);
+  const elementCounts = filters.elementCounts;
+  const hasElementLimit = Object.values(elementCounts).some((val) => val !== null);
   for (let i = 1; i <= 49; i += 1) {
     if (state.excluded.has(i)) continue;
-    if (filters.colors.length && !filters.colors.includes(getColorClass(i))) {
-      continue;
+    if (hasColorLimit) {
+      const color = getColorClass(i);
+      if (color === "red" && colorCounts.red === 0) continue;
+      if (color === "blue" && colorCounts.blue === 0) continue;
+      if (color === "green" && colorCounts.green === 0) continue;
     }
-    if (allowedElements.length && !allowedElements.includes(getElementTag(i))) {
-      continue;
+    if (hasElementLimit) {
+      const tag = getElementTag(i);
+      if (tag === "金" && elementCounts.metal === 0) continue;
+      if (tag === "木" && elementCounts.wood === 0) continue;
+      if (tag === "水" && elementCounts.water === 0) continue;
+      if (tag === "火" && elementCounts.fire === 0) continue;
+      if (tag === "土" && elementCounts.earth === 0) continue;
     }
     pool.push(i);
   }
@@ -600,7 +612,14 @@ async function countCombinations(pool, filters, token) {
   const suffixBig = new Array(n + 1).fill(0);
   const suffixSmall = new Array(n + 1).fill(0);
   const suffixRowsMask = new Array(n + 1).fill(0);
-  const suffixColorsMask = new Array(n + 1).fill(0);
+  const suffixRed = new Array(n + 1).fill(0);
+  const suffixBlue = new Array(n + 1).fill(0);
+  const suffixGreen = new Array(n + 1).fill(0);
+  const suffixMetal = new Array(n + 1).fill(0);
+  const suffixWood = new Array(n + 1).fill(0);
+  const suffixWater = new Array(n + 1).fill(0);
+  const suffixFire = new Array(n + 1).fill(0);
+  const suffixEarth = new Array(n + 1).fill(0);
 
   for (let i = 0; i < n; i += 1) {
     prefix[i + 1] = prefix[i] + pool[i];
@@ -611,10 +630,26 @@ async function countCombinations(pool, filters, token) {
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
     suffixSmall[i] = suffixSmall[i + 1] + (pool[i] <= 24 ? 1 : 0);
     suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
-    suffixColorsMask[i] = suffixColorsMask[i + 1] | colorMaskForNum(pool[i]);
+    const color = getColorClass(pool[i]);
+    suffixRed[i] = suffixRed[i + 1] + (color === "red" ? 1 : 0);
+    suffixBlue[i] = suffixBlue[i + 1] + (color === "blue" ? 1 : 0);
+    suffixGreen[i] = suffixGreen[i + 1] + (color === "green" ? 1 : 0);
+    const element = getElementTag(pool[i]);
+    suffixMetal[i] = suffixMetal[i + 1] + (element === "金" ? 1 : 0);
+    suffixWood[i] = suffixWood[i + 1] + (element === "木" ? 1 : 0);
+    suffixWater[i] = suffixWater[i + 1] + (element === "水" ? 1 : 0);
+    suffixFire[i] = suffixFire[i + 1] + (element === "火" ? 1 : 0);
+    suffixEarth[i] = suffixEarth[i + 1] + (element === "土" ? 1 : 0);
   }
 
-  const needMultiColor = filters.colors.length >= 2;
+  const { red: redTarget, blue: blueTarget, green: greenTarget } = filters.colorCounts;
+  const {
+    metal: metalTarget,
+    wood: woodTarget,
+    water: waterTarget,
+    fire: fireTarget,
+    earth: earthTarget
+  } = filters.elementCounts;
 
   let iterations = 0;
 
@@ -629,7 +664,14 @@ async function countCombinations(pool, filters, token) {
     lastNum,
     runLen,
     rowsMask,
-    colorMask,
+    redCount,
+    blueCount,
+    greenCount,
+    metalCount,
+    woodCount,
+    waterCount,
+    fireCount,
+    earthCount,
     currentGcd
   ) {
     if (state.countToken !== token) return 0;
@@ -641,11 +683,18 @@ async function countCombinations(pool, filters, token) {
       if (filters.evenCount !== null && (6 - oddCount) !== filters.evenCount) return 0;
       if (filters.smallCount !== null && smallCount !== filters.smallCount) return 0;
       if (filters.bigCount !== null && bigCount !== filters.bigCount) return 0;
+      if (redTarget !== null && redCount !== redTarget) return 0;
+      if (blueTarget !== null && blueCount !== blueTarget) return 0;
+      if (greenTarget !== null && greenCount !== greenTarget) return 0;
+      if (metalTarget !== null && metalCount !== metalTarget) return 0;
+      if (woodTarget !== null && woodCount !== woodTarget) return 0;
+      if (waterTarget !== null && waterCount !== waterTarget) return 0;
+      if (fireTarget !== null && fireCount !== fireTarget) return 0;
+      if (earthTarget !== null && earthCount !== earthTarget) return 0;
       if (filters.noAllOdd && oddCount === 6) return 0;
       if (filters.noAllEven && oddCount === 0) return 0;
       if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
-      if (needMultiColor && popcount(colorMask) < 2) return 0;
       if (filters.noMultiplicationCombo) {
         for (let base = 2; base <= 9; base += 1) {
           if (currentGcd % base === 0) return 0;
@@ -690,6 +739,54 @@ async function countCombinations(pool, filters, token) {
       const minSmall = smallCount + Math.max(0, remaining - bigRemaining);
       if (filters.smallCount < minSmall || filters.smallCount > maxSmall) return 0;
     }
+    if (redTarget !== null) {
+      const maxRed = redCount + Math.min(remaining, suffixRed[start]);
+      const nonRedRemaining = (n - start) - suffixRed[start];
+      const minRed = redCount + Math.max(0, remaining - nonRedRemaining);
+      if (redTarget < minRed || redTarget > maxRed) return 0;
+    }
+    if (blueTarget !== null) {
+      const maxBlue = blueCount + Math.min(remaining, suffixBlue[start]);
+      const nonBlueRemaining = (n - start) - suffixBlue[start];
+      const minBlue = blueCount + Math.max(0, remaining - nonBlueRemaining);
+      if (blueTarget < minBlue || blueTarget > maxBlue) return 0;
+    }
+    if (greenTarget !== null) {
+      const maxGreen = greenCount + Math.min(remaining, suffixGreen[start]);
+      const nonGreenRemaining = (n - start) - suffixGreen[start];
+      const minGreen = greenCount + Math.max(0, remaining - nonGreenRemaining);
+      if (greenTarget < minGreen || greenTarget > maxGreen) return 0;
+    }
+    if (metalTarget !== null) {
+      const maxMetal = metalCount + Math.min(remaining, suffixMetal[start]);
+      const nonMetalRemaining = (n - start) - suffixMetal[start];
+      const minMetal = metalCount + Math.max(0, remaining - nonMetalRemaining);
+      if (metalTarget < minMetal || metalTarget > maxMetal) return 0;
+    }
+    if (woodTarget !== null) {
+      const maxWood = woodCount + Math.min(remaining, suffixWood[start]);
+      const nonWoodRemaining = (n - start) - suffixWood[start];
+      const minWood = woodCount + Math.max(0, remaining - nonWoodRemaining);
+      if (woodTarget < minWood || woodTarget > maxWood) return 0;
+    }
+    if (waterTarget !== null) {
+      const maxWater = waterCount + Math.min(remaining, suffixWater[start]);
+      const nonWaterRemaining = (n - start) - suffixWater[start];
+      const minWater = waterCount + Math.max(0, remaining - nonWaterRemaining);
+      if (waterTarget < minWater || waterTarget > maxWater) return 0;
+    }
+    if (fireTarget !== null) {
+      const maxFire = fireCount + Math.min(remaining, suffixFire[start]);
+      const nonFireRemaining = (n - start) - suffixFire[start];
+      const minFire = fireCount + Math.max(0, remaining - nonFireRemaining);
+      if (fireTarget < minFire || fireTarget > maxFire) return 0;
+    }
+    if (earthTarget !== null) {
+      const maxEarth = earthCount + Math.min(remaining, suffixEarth[start]);
+      const nonEarthRemaining = (n - start) - suffixEarth[start];
+      const minEarth = earthCount + Math.max(0, remaining - nonEarthRemaining);
+      if (earthTarget < minEarth || earthTarget > maxEarth) return 0;
+    }
 
     if (filters.noAllOdd || filters.noAllEven) {
       if (oddCount === 0 && suffixOdd[start] === 0) return 0;
@@ -701,15 +798,21 @@ async function countCombinations(pool, filters, token) {
       if (possibleRows < filters.minRows) return 0;
     }
 
-    if (needMultiColor && popcount(colorMask | suffixColorsMask[start]) < 2) {
-      return 0;
-    }
-
     let total = 0;
     for (let i = start; i <= n - remaining; i += 1) {
       const num = pool[i];
+      const color = getColorClass(num);
       const nextSum = sum + num;
       const nextOdd = oddCount + (num % 2 === 1 ? 1 : 0);
+      const nextRed = redCount + (color === "red" ? 1 : 0);
+      const nextBlue = blueCount + (color === "blue" ? 1 : 0);
+      const nextGreen = greenCount + (color === "green" ? 1 : 0);
+      const element = getElementTag(num);
+      const nextMetal = metalCount + (element === "金" ? 1 : 0);
+      const nextWood = woodCount + (element === "木" ? 1 : 0);
+      const nextWater = waterCount + (element === "水" ? 1 : 0);
+      const nextFire = fireCount + (element === "火" ? 1 : 0);
+      const nextEarth = earthCount + (element === "土" ? 1 : 0);
       const nextSmall = smallCount + (num <= 24 ? 1 : 0);
       const nextBig = bigCount + (num >= 25 ? 1 : 0);
       const tail = num % 10;
@@ -721,7 +824,6 @@ async function countCombinations(pool, filters, token) {
       const nextRun = lastNum !== null && num === lastNum + 1 ? runLen + 1 : 1;
       if (nextRun > filters.maxConsecutive) continue;
       const nextRows = rowsMask | (1 << (getRowIndex(num) - 1));
-      const nextColors = colorMask | colorMaskForNum(num);
       const nextGcd = currentGcd === 0 ? num : gcd(currentGcd, num);
 
       iterations += 1;
@@ -741,14 +843,21 @@ async function countCombinations(pool, filters, token) {
         num,
         nextRun,
         nextRows,
-        nextColors,
+        nextRed,
+        nextBlue,
+        nextGreen,
+        nextMetal,
+        nextWood,
+        nextWater,
+        nextFire,
+        nextEarth,
         nextGcd
       );
     }
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -767,6 +876,44 @@ function isValid(nums, filters) {
   const smallCount = nums.filter((n) => n <= 24).length;
   if (filters.smallCount !== null && smallCount !== filters.smallCount) return false;
 
+  const colorCounts = {
+    red: nums.filter((n) => getColorClass(n) === "red").length,
+    blue: nums.filter((n) => getColorClass(n) === "blue").length,
+    green: nums.filter((n) => getColorClass(n) === "green").length
+  };
+  if (filters.colorCounts.red !== null && colorCounts.red !== filters.colorCounts.red) {
+    return false;
+  }
+  if (filters.colorCounts.blue !== null && colorCounts.blue !== filters.colorCounts.blue) {
+    return false;
+  }
+  if (filters.colorCounts.green !== null && colorCounts.green !== filters.colorCounts.green) {
+    return false;
+  }
+
+  const elementCounts = {
+    metal: nums.filter((n) => getElementTag(n) === "金").length,
+    wood: nums.filter((n) => getElementTag(n) === "木").length,
+    water: nums.filter((n) => getElementTag(n) === "水").length,
+    fire: nums.filter((n) => getElementTag(n) === "火").length,
+    earth: nums.filter((n) => getElementTag(n) === "土").length
+  };
+  if (filters.elementCounts.metal !== null && elementCounts.metal !== filters.elementCounts.metal) {
+    return false;
+  }
+  if (filters.elementCounts.wood !== null && elementCounts.wood !== filters.elementCounts.wood) {
+    return false;
+  }
+  if (filters.elementCounts.water !== null && elementCounts.water !== filters.elementCounts.water) {
+    return false;
+  }
+  if (filters.elementCounts.fire !== null && elementCounts.fire !== filters.elementCounts.fire) {
+    return false;
+  }
+  if (filters.elementCounts.earth !== null && elementCounts.earth !== filters.elementCounts.earth) {
+    return false;
+  }
+
   if (maxConsecutiveRun(nums) > filters.maxConsecutive) return false;
   if (filters.maxTail !== null && maxTailCount(nums) > filters.maxTail) {
     return false;
@@ -775,26 +922,11 @@ function isValid(nums, filters) {
     const rowCount = new Set(nums.map((n) => getRowIndex(n))).size;
     if (rowCount < filters.minRows) return false;
   }
-  if (filters.colors.length) {
-    if (nums.some((n) => !filters.colors.includes(getColorClass(n)))) {
-      return false;
-    }
-    if (filters.colors.length >= 2) {
-      const colorSet = new Set(nums.map((n) => getColorClass(n)));
-      if (colorSet.size < 2) return false;
-    }
-  }
   if (filters.noMultiplicationCombo) {
     for (let base = 2; base <= 9; base += 1) {
       if (nums.every((n) => n % base === 0)) return false;
     }
   }
-  if (filters.elements.length) {
-    if (nums.some((n) => !filters.elements.includes(getElementTag(n)))) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -884,11 +1016,27 @@ function updateCountConstraints(source) {
   const bigVal = getSelectedCount(els.bigCount);
   const oddVal = getSelectedCount(els.oddCount);
   const evenVal = getSelectedCount(els.evenCount);
+  const redVal = getSelectedCount(els.redCount);
+  const blueVal = getSelectedCount(els.blueCount);
+  const greenVal = getSelectedCount(els.greenCount);
+  const metalVal = getSelectedCount(els.metalCount);
+  const woodVal = getSelectedCount(els.woodCount);
+  const waterVal = getSelectedCount(els.waterCount);
+  const fireVal = getSelectedCount(els.fireCount);
+  const earthVal = getSelectedCount(els.earthCount);
 
   let maxBig = smallVal !== null ? 6 - smallVal : null;
   let maxSmall = bigVal !== null ? 6 - bigVal : null;
   let maxEven = oddVal !== null ? 6 - oddVal : null;
   let maxOdd = evenVal !== null ? 6 - evenVal : null;
+  let maxRed = 6 - (blueVal ?? 0) - (greenVal ?? 0);
+  let maxBlue = 6 - (redVal ?? 0) - (greenVal ?? 0);
+  let maxGreen = 6 - (redVal ?? 0) - (blueVal ?? 0);
+  let maxMetal = 6 - (woodVal ?? 0) - (waterVal ?? 0) - (fireVal ?? 0) - (earthVal ?? 0);
+  let maxWood = 6 - (metalVal ?? 0) - (waterVal ?? 0) - (fireVal ?? 0) - (earthVal ?? 0);
+  let maxWater = 6 - (metalVal ?? 0) - (woodVal ?? 0) - (fireVal ?? 0) - (earthVal ?? 0);
+  let maxFire = 6 - (metalVal ?? 0) - (woodVal ?? 0) - (waterVal ?? 0) - (earthVal ?? 0);
+  let maxEarth = 6 - (metalVal ?? 0) - (woodVal ?? 0) - (waterVal ?? 0) - (fireVal ?? 0);
 
   if (source === "small" && smallVal !== null && bigVal === null && maxBig !== null) {
     setSelectedCount(els.bigCount, maxBig);
@@ -904,11 +1052,21 @@ function updateCountConstraints(source) {
     maxEven = 6 - maxOdd;
   }
 
-  setCountDisabled(els.bigCount, maxBig);
-  setCountDisabled(els.smallCount, maxSmall);
-  setCountDisabled(els.evenCount, maxEven);
-  setCountDisabled(els.oddCount, maxOdd);
+  const cleared =
+    setCountDisabled(els.bigCount, maxBig) ||
+    setCountDisabled(els.smallCount, maxSmall) ||
+    setCountDisabled(els.evenCount, maxEven) ||
+    setCountDisabled(els.oddCount, maxOdd) ||
+    setCountDisabled(els.redCount, maxRed) ||
+    setCountDisabled(els.blueCount, maxBlue) ||
+    setCountDisabled(els.greenCount, maxGreen) ||
+    setCountDisabled(els.metalCount, maxMetal) ||
+    setCountDisabled(els.woodCount, maxWood) ||
+    setCountDisabled(els.waterCount, maxWater) ||
+    setCountDisabled(els.fireCount, maxFire) ||
+    setCountDisabled(els.earthCount, maxEarth);
   syncingSize = false;
+  if (cleared) updateCountConstraints();
 }
 
 function bindCountGroup(container, source) {
@@ -930,6 +1088,14 @@ bindCountGroup(els.smallCount, "small");
 bindCountGroup(els.bigCount, "big");
 bindCountGroup(els.oddCount, "odd");
 bindCountGroup(els.evenCount, "even");
+bindCountGroup(els.redCount, "red");
+bindCountGroup(els.blueCount, "blue");
+bindCountGroup(els.greenCount, "green");
+bindCountGroup(els.metalCount, "metal");
+bindCountGroup(els.woodCount, "wood");
+bindCountGroup(els.waterCount, "water");
+bindCountGroup(els.fireCount, "fire");
+bindCountGroup(els.earthCount, "earth");
 
 function handleExcludeChange() {
   buildExcluded();
@@ -978,14 +1144,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
   els.noAllEven,
   els.noMultiplicationCombo,
   els.minRows,
-  els.colorRed,
-  els.colorBlue,
-  els.colorGreen,
-  els.needMetal,
-  els.needWood,
-  els.needWater,
-  els.needFire,
-  els.needEarth,
   els.ticketCount
 ].forEach((input) => {
   if (!input) return;
