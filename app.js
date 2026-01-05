@@ -1,6 +1,8 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
 const LOCAL_IMPORT_API = "http://127.0.0.1:5177/api/marksix/import";
+const AUTO_SYNC_LATEST = 100;
+const AUTO_SYNC_INTERVAL_HOURS = 24;
 
 const DRAW_FRAGMENT = `fragment lotteryDrawsFragment on LotteryDraw {
     id
@@ -109,7 +111,9 @@ const els = {
   analysisCounts: document.getElementById("analysisCounts"),
   syncAll: document.getElementById("syncAll"),
   syncLatest: document.getElementById("syncLatest"),
-  syncStatus: document.getElementById("syncStatus")
+  syncStatus: document.getElementById("syncStatus"),
+  syncProgress: document.getElementById("syncProgress"),
+  syncProgressText: document.getElementById("syncProgressText")
 };
 
 const state = {
@@ -444,6 +448,17 @@ function setSyncStatus(message) {
   els.syncStatus.textContent = message;
 }
 
+function setSyncProgress(value) {
+  if (els.syncProgress) {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    els.syncProgress.value = clamped;
+  }
+  if (els.syncProgressText) {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    els.syncProgressText.textContent = `${clamped}%`;
+  }
+}
+
 function setSyncDisabled(disabled) {
   if (els.syncAll) els.syncAll.disabled = disabled;
   if (els.syncLatest) els.syncLatest.disabled = disabled;
@@ -455,12 +470,16 @@ async function syncAllDraws() {
   if (isSyncing) return;
   isSyncing = true;
   setSyncDisabled(true);
+  setSyncProgress(0);
   try {
     const startYear = 1993;
     const endYear = new Date().getFullYear();
     let appendedTotal = 0;
+    const totalYears = endYear - startYear + 1;
     for (let year = startYear; year <= endYear; year += 1) {
       setSyncStatus(`同步中…${year}`);
+      const progress = ((year - startYear) / totalYears) * 100;
+      setSyncProgress(progress);
       const start = `${year}0101`;
       const end = `${year}1231`;
       const draws = await requestDraws({
@@ -476,6 +495,7 @@ async function syncAllDraws() {
       }
     }
     setSyncStatus(`同步完成，新增 ${appendedTotal} 期`);
+    setSyncProgress(100);
     fetchAnalysisData();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -486,14 +506,15 @@ async function syncAllDraws() {
   }
 }
 
-async function syncLatestDraws() {
+async function syncLatestDraws(targetCount = AUTO_SYNC_LATEST) {
   if (isSyncing) return;
   isSyncing = true;
   setSyncDisabled(true);
+  setSyncProgress(0);
   try {
-    setSyncStatus("同步最新期數…");
+    setSyncStatus(`同步最新 ${targetCount} 期…`);
     const draws = await requestDraws({
-      lastNDraw: 30,
+      lastNDraw: targetCount,
       startDate: null,
       endDate: null,
       drawType: "All"
@@ -501,6 +522,7 @@ async function syncLatestDraws() {
     const resultDraws = filterResultDraws(draws);
     const res = await postLocalImport(resultDraws);
     setSyncStatus(`同步完成，新增 ${res.appended || 0} 期`);
+    setSyncProgress(100);
     fetchAnalysisData();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -509,6 +531,14 @@ async function syncLatestDraws() {
     isSyncing = false;
     setSyncDisabled(false);
   }
+}
+
+function scheduleAutoSync() {
+  syncLatestDraws(AUTO_SYNC_LATEST);
+  const intervalMs = AUTO_SYNC_INTERVAL_HOURS * 60 * 60 * 1000;
+  setInterval(() => {
+    syncLatestDraws(AUTO_SYNC_LATEST);
+  }, intervalMs);
 }
 
 async function fetchDraws(n) {
@@ -1462,3 +1492,4 @@ updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
 fetchAnalysisData();
+scheduleAutoSync();

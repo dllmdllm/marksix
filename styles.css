@@ -543,8 +543,8 @@ body {
 }
 
 .count-line-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -588,6 +588,30 @@ body {
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+.analysis-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.analysis-progress progress {
+  width: 220px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  accent-color: var(--accent-2);
+}
+
+.analysis-progress progress::-webkit-progress-bar {
+  background: #f3eadc;
+  border-radius: 999px;
+}
+
+.analysis-progress progress::-webkit-progress-value {
+  border-radius: 999px;
 }
 
 .ghost-btn {
