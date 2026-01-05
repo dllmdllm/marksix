@@ -75,6 +75,7 @@ const els = {
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
   oddCount: document.getElementById("oddCount"),
+  evenCount: document.getElementById("evenCount"),
   smallCount: document.getElementById("smallCount"),
   bigCount: document.getElementById("bigCount"),
   maxConsecutive: document.getElementById("maxConsecutive"),
@@ -191,6 +192,33 @@ function parseNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function getSelectedCount(container) {
+  if (!container) return null;
+  const checked = container.querySelector("input[type=checkbox]:checked");
+  if (!checked) return null;
+  const n = Number(checked.dataset.count);
+  return Number.isFinite(n) ? n : null;
+}
+
+function setSelectedCount(container, value) {
+  if (!container) return;
+  const inputs = [...container.querySelectorAll("input[type=checkbox]")];
+  inputs.forEach((input) => {
+    input.checked = Number(input.dataset.count) === value;
+  });
+}
+
+function setCountDisabled(container, maxAllowed) {
+  if (!container) return;
+  const inputs = [...container.querySelectorAll("input[type=checkbox]")];
+  inputs.forEach((input) => {
+    const value = Number(input.dataset.count);
+    const disabled = maxAllowed !== null && value > maxAllowed;
+    input.disabled = disabled;
+    if (disabled && input.checked) input.checked = false;
+  });
 }
 
 function getRowIndex(num) {
@@ -497,9 +525,10 @@ function readFilters() {
   return {
     sumMin: parseNumber(els.sumMin.value),
     sumMax: parseNumber(els.sumMax.value),
-    oddCount: parseNumber(els.oddCount.value),
-    smallCount: parseNumber(els.smallCount?.value),
-    bigCount: parseNumber(els.bigCount.value),
+    oddCount: getSelectedCount(els.oddCount),
+    evenCount: getSelectedCount(els.evenCount),
+    smallCount: getSelectedCount(els.smallCount),
+    bigCount: getSelectedCount(els.bigCount),
     maxConsecutive:
       parseNumber(els.maxConsecutive.value) === null
         ? 6
@@ -567,6 +596,7 @@ async function countCombinations(pool, filters, token) {
 
   const prefix = new Array(n + 1).fill(0);
   const suffixOdd = new Array(n + 1).fill(0);
+  const suffixEven = new Array(n + 1).fill(0);
   const suffixBig = new Array(n + 1).fill(0);
   const suffixSmall = new Array(n + 1).fill(0);
   const suffixRowsMask = new Array(n + 1).fill(0);
@@ -577,6 +607,7 @@ async function countCombinations(pool, filters, token) {
   }
   for (let i = n - 1; i >= 0; i -= 1) {
     suffixOdd[i] = suffixOdd[i + 1] + (pool[i] % 2 === 1 ? 1 : 0);
+    suffixEven[i] = suffixEven[i + 1] + (pool[i] % 2 === 0 ? 1 : 0);
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
     suffixSmall[i] = suffixSmall[i + 1] + (pool[i] <= 24 ? 1 : 0);
     suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
@@ -607,6 +638,7 @@ async function countCombinations(pool, filters, token) {
       if (filters.sumMin !== null && sum < filters.sumMin) return 0;
       if (filters.sumMax !== null && sum > filters.sumMax) return 0;
       if (filters.oddCount !== null && oddCount !== filters.oddCount) return 0;
+      if (filters.evenCount !== null && (6 - oddCount) !== filters.evenCount) return 0;
       if (filters.smallCount !== null && smallCount !== filters.smallCount) return 0;
       if (filters.bigCount !== null && bigCount !== filters.bigCount) return 0;
       if (filters.noAllOdd && oddCount === 6) return 0;
@@ -638,6 +670,12 @@ async function countCombinations(pool, filters, token) {
       const evenCountRemaining = (n - start) - suffixOdd[start];
       const minOdd = oddCount + Math.max(0, remaining - evenCountRemaining);
       if (filters.oddCount < minOdd || filters.oddCount > maxOdd) return 0;
+    }
+    if (filters.evenCount !== null) {
+      const maxEven = (depth - oddCount) + Math.min(remaining, suffixEven[start]);
+      const oddRemaining = (n - start) - suffixEven[start];
+      const minEven = (depth - oddCount) + Math.max(0, remaining - oddRemaining);
+      if (filters.evenCount < minEven || filters.evenCount > maxEven) return 0;
     }
 
     if (filters.bigCount !== null) {
@@ -720,6 +758,7 @@ function isValid(nums, filters) {
 
   const oddCount = nums.filter((n) => n % 2 === 1).length;
   if (filters.oddCount !== null && oddCount !== filters.oddCount) return false;
+  if (filters.evenCount !== null && (6 - oddCount) !== filters.evenCount) return false;
   if (filters.noAllOdd && oddCount === 6) return false;
   if (filters.noAllEven && oddCount === 0) return false;
 
@@ -838,39 +877,59 @@ els.lastN.addEventListener("change", () => {
 
 let syncingSize = false;
 
-function syncBigSmall(changed) {
+function updateCountConstraints(source) {
   if (syncingSize) return;
   syncingSize = true;
-  const smallVal = parseNumber(els.smallCount?.value);
-  const bigVal = parseNumber(els.bigCount?.value);
-  if (changed === "small" && smallVal !== null) {
-    const other = 6 - smallVal;
-    if (other >= 0 && other <= 6) {
-      els.bigCount.value = String(other);
-    }
+  const smallVal = getSelectedCount(els.smallCount);
+  const bigVal = getSelectedCount(els.bigCount);
+  const oddVal = getSelectedCount(els.oddCount);
+  const evenVal = getSelectedCount(els.evenCount);
+
+  let maxBig = smallVal !== null ? 6 - smallVal : null;
+  let maxSmall = bigVal !== null ? 6 - bigVal : null;
+  let maxEven = oddVal !== null ? 6 - oddVal : null;
+  let maxOdd = evenVal !== null ? 6 - evenVal : null;
+
+  if (source === "small" && smallVal !== null && bigVal === null && maxBig !== null) {
+    setSelectedCount(els.bigCount, maxBig);
+    maxSmall = 6 - maxBig;
+  } else if (source === "big" && bigVal !== null && smallVal === null && maxSmall !== null) {
+    setSelectedCount(els.smallCount, maxSmall);
+    maxBig = 6 - maxSmall;
+  } else if (source === "odd" && oddVal !== null && evenVal === null && maxEven !== null) {
+    setSelectedCount(els.evenCount, maxEven);
+    maxOdd = 6 - maxEven;
+  } else if (source === "even" && evenVal !== null && oddVal === null && maxOdd !== null) {
+    setSelectedCount(els.oddCount, maxOdd);
+    maxEven = 6 - maxOdd;
   }
-  if (changed === "big" && bigVal !== null) {
-    const other = 6 - bigVal;
-    if (other >= 0 && other <= 6) {
-      els.smallCount.value = String(other);
-    }
-  }
+
+  setCountDisabled(els.bigCount, maxBig);
+  setCountDisabled(els.smallCount, maxSmall);
+  setCountDisabled(els.evenCount, maxEven);
+  setCountDisabled(els.oddCount, maxOdd);
   syncingSize = false;
 }
 
-if (els.smallCount) {
-  els.smallCount.addEventListener("change", () => {
-    syncBigSmall("small");
+function bindCountGroup(container, source) {
+  if (!container) return;
+  container.addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input || input.type !== "checkbox") return;
+    if (input.checked) {
+      container.querySelectorAll("input[type=checkbox]").forEach((other) => {
+        if (other !== input) other.checked = false;
+      });
+    }
+    updateCountConstraints(source);
     autoUpdate();
   });
 }
 
-if (els.bigCount) {
-  els.bigCount.addEventListener("change", () => {
-    syncBigSmall("big");
-    autoUpdate();
-  });
-}
+bindCountGroup(els.smallCount, "small");
+bindCountGroup(els.bigCount, "big");
+bindCountGroup(els.oddCount, "odd");
+bindCountGroup(els.evenCount, "even");
 
 function handleExcludeChange() {
   buildExcluded();
@@ -913,7 +972,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
 [
   els.sumMin,
   els.sumMax,
-  els.oddCount,
   els.maxConsecutive,
   els.maxTail,
   els.noAllOdd,
@@ -936,4 +994,5 @@ els.generateBtn.addEventListener("click", autoUpdate);
 });
 
 renderNumberBoard();
+updateCountConstraints();
 fetchDraws(parseNumber(els.lastN.value) || 0);

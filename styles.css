@@ -394,6 +394,26 @@ body {
   color: var(--muted);
 }
 
+.count-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.count-option {
+  gap: 6px;
+}
+
+.count-option span {
+  min-width: 14px;
+  text-align: center;
+}
+
+.count-option input:disabled + span {
+  opacity: 0.35;
+}
+
 .draw-list {
   display: grid;
   gap: 12px;
