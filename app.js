@@ -522,6 +522,20 @@ function readFilters() {
     fire: getSelectedCount(els.fireCount),
     earth: getSelectedCount(els.earthCount)
   };
+  const colorEntries = Object.entries(colorCounts).filter(([, value]) => value !== null);
+  if (colorEntries.length === 2) {
+    const sum = colorEntries.reduce((acc, [, value]) => acc + value, 0);
+    const remaining = 6 - sum;
+    const missing = Object.keys(colorCounts).find((key) => colorCounts[key] === null);
+    if (missing) colorCounts[missing] = remaining;
+  }
+  const elementEntries = Object.entries(elementCounts).filter(([, value]) => value !== null);
+  if (elementEntries.length === 4) {
+    const sum = elementEntries.reduce((acc, [, value]) => acc + value, 0);
+    const remaining = 6 - sum;
+    const missing = Object.keys(elementCounts).find((key) => elementCounts[key] === null);
+    if (missing) elementCounts[missing] = remaining;
+  }
 
   return {
     sumMin: parseNumber(els.sumMin.value),
@@ -590,16 +604,6 @@ function popcount(mask) {
     count += 1;
   }
   return count;
-}
-
-function elementMaskForNum(num) {
-  const tag = getElementTag(num);
-  if (tag === "金") return 1;
-  if (tag === "木") return 2;
-  if (tag === "水") return 4;
-  if (tag === "火") return 8;
-  if (tag === "土") return 16;
-  return 0;
 }
 
 async function countCombinations(pool, filters, token) {

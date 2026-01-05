@@ -392,13 +392,27 @@ body {
 .mini-label {
   font-size: 0.85rem;
   color: var(--muted);
+  min-width: 64px;
 }
 
 .count-options {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
   align-items: center;
+}
+
+.count-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.count-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .count-option {
@@ -520,5 +534,17 @@ body {
 
   .element-inner {
     font-size: 0.5rem;
+  }
+
+  .count-line {
+    gap: 6px;
+  }
+
+  .count-option {
+    font-size: 0.75rem;
+  }
+
+  .count-option input {
+    transform: scale(0.9);
   }
 }
