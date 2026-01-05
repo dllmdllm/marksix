@@ -64,7 +64,6 @@ const els = {
   comboCount: document.getElementById("comboCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
-  noMultiplicationCombo: document.getElementById("noMultiplicationCombo"),
   minRows: document.getElementById("minRows"),
   redCount: document.getElementById("redCount"),
   blueCount: document.getElementById("blueCount"),
@@ -735,8 +734,10 @@ function updateAnalysisView() {
   }
 
   ranked.sort((a, b) => b.count - a.count || a.num - b.num);
-  const hot = ranked.filter((item) => item.count > 0).slice(0, 10).map((item) => item.num);
-  const topCounts = ranked.filter((item) => item.count > 0).slice(0, 15);
+  const nonZeroRanked = ranked.filter((item) => item.count > 0);
+  const cutoff = nonZeroRanked.length >= 10 ? nonZeroRanked[9].count : 1;
+  const hot = nonZeroRanked.filter((item) => item.count >= cutoff).map((item) => item.num);
+  const topCounts = nonZeroRanked.slice(0, 15);
 
   if (cold.length) {
     renderBallList(els.analysisCold, cold);
@@ -858,7 +859,6 @@ function readFilters() {
     maxTail: parseNumber(els.maxTail.value),
     noAllOdd: false,
     noAllEven: false,
-    noMultiplicationCombo: !!els.noMultiplicationCombo?.checked,
     minRows: parseNumber(els.minRows?.value) || 1,
     colorCounts,
     elementCounts
@@ -890,17 +890,6 @@ function getFilteredPool(filters) {
     pool.push(i);
   }
   return pool;
-}
-
-function gcd(a, b) {
-  let x = a;
-  let y = b;
-  while (y !== 0) {
-    const t = x % y;
-    x = y;
-    y = t;
-  }
-  return x;
 }
 
 function popcount(mask) {
@@ -982,8 +971,7 @@ async function countCombinations(pool, filters, token) {
     woodCount,
     waterCount,
     fireCount,
-    earthCount,
-    currentGcd
+    earthCount
   ) {
     if (state.countToken !== token) return 0;
     const remaining = 6 - depth;
@@ -1004,11 +992,6 @@ async function countCombinations(pool, filters, token) {
       if (earthTarget !== null && earthCount !== earthTarget) return 0;
       if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
-      if (filters.noMultiplicationCombo) {
-        for (let base = 2; base <= 9; base += 1) {
-          if (currentGcd % base === 0) return 0;
-        }
-      }
       return 1;
     }
 
@@ -1128,7 +1111,6 @@ async function countCombinations(pool, filters, token) {
       const nextRun = lastNum !== null && num === lastNum + 1 ? runLen + 1 : 1;
       if (nextRun > filters.maxConsecutive) continue;
       const nextRows = rowsMask | (1 << (getRowIndex(num) - 1));
-      const nextGcd = currentGcd === 0 ? num : gcd(currentGcd, num);
 
       iterations += 1;
       if (iterations % 2000 === 0) {
@@ -1154,14 +1136,13 @@ async function countCombinations(pool, filters, token) {
         nextWood,
         nextWater,
         nextFire,
-        nextEarth,
-        nextGcd
+        nextEarth
       );
     }
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -1223,11 +1204,6 @@ function isValid(nums, filters) {
   if (filters.minRows > 1) {
     const rowCount = new Set(nums.map((n) => getRowIndex(n))).size;
     if (rowCount < filters.minRows) return false;
-  }
-  if (filters.noMultiplicationCombo) {
-    for (let base = 2; base <= 9; base += 1) {
-      if (nums.every((n) => n % base === 0)) return false;
-    }
   }
   return true;
 }
@@ -1478,7 +1454,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
   els.sumMax,
   els.maxConsecutive,
   els.maxTail,
-  els.noMultiplicationCombo,
   els.minRows,
   els.ticketCount
 ].forEach((input) => {

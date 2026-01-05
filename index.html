@@ -95,21 +95,6 @@
       <section class="panel filters">
         <h2 class="center-title">條件設定</h2>
         <div class="field line">
-          <label>6個號碼總和（一般參考可以設喺 90–210 之間，中心位大約 150 左右）</label>
-          <div class="sum-range" id="sumRange">
-            <div class="range-bar">
-              <input id="sumMin" type="range" min="21" max="279" value="90" />
-              <input id="sumMax" type="range" min="21" max="279" value="210" />
-            </div>
-            <div class="range-values">
-              <span class="range-pill" id="sumMinLabel">90</span>
-              <span class="sep">–</span>
-              <span class="range-pill" id="sumMaxLabel">210</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="field line">
           <label>單數 / 雙數</label>
           <div class="count-stack">
             <div class="count-line">
@@ -184,29 +169,6 @@
         </div>
 
         <div class="field line">
-          <label for="maxConsecutive">唔要連續幾個號碼</label>
-          <select id="maxConsecutive">
-            <option value="" selected>無限制</option>
-            <option value="2">2 個</option>
-            <option value="3">3 個</option>
-            <option value="4">4 個</option>
-            <option value="5">5 個</option>
-          </select>
-        </div>
-
-        <div class="field line">
-          <label for="maxTail">最多同尾數量 <span class="note">（6 個號碼入面，同一個尾數（0–9）最多可以出現幾多次）</span></label>
-          <select id="maxTail">
-            <option value="" selected>無限制</option>
-            <option value="1">1 次</option>
-            <option value="2">2 次</option>
-            <option value="3">3 次</option>
-            <option value="4">4 次</option>
-          </select>
-        </div>
-
-
-        <div class="field line">
           <label>紅 / 藍 / 綠 數量</label>
           <div class="count-stack">
             <div class="count-line">
@@ -254,26 +216,6 @@
               </div>
               <div id="greenList" class="count-line-list"></div>
             </div>
-          </div>
-        </div>
-
-        <div class="field line">
-          <label>乘法表組合</label>
-          <label class="check">
-            <input id="noMultiplicationCombo" type="checkbox" />
-            排除乘法表組合
-          </label>
-        </div>
-
-        <div class="field line">
-          <label>行數限制</label>
-          <div class="inline">
-            <select id="minRows">
-              <option value="" selected>無限制</option>
-              <option value="3">至少 3 門</option>
-              <option value="4">至少 4 門</option>
-              <option value="5">5 門齊</option>
-            </select>
           </div>
         </div>
 
@@ -354,6 +296,55 @@
                 </div>
               </div>
               <div id="earthList" class="count-line-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field line">
+          <label>行數限制</label>
+          <div class="inline">
+            <select id="minRows">
+              <option value="" selected>無限制</option>
+              <option value="3">至少 3 門</option>
+              <option value="4">至少 4 門</option>
+              <option value="5">5 門齊</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field line">
+          <label for="maxConsecutive">唔要連續幾個號碼</label>
+          <select id="maxConsecutive">
+            <option value="" selected>無限制</option>
+            <option value="2">2 個</option>
+            <option value="3">3 個</option>
+            <option value="4">4 個</option>
+            <option value="5">5 個</option>
+          </select>
+        </div>
+
+        <div class="field line">
+          <label for="maxTail">最多同尾數量 <span class="note">（6 個號碼入面，同一個尾數（0–9）最多可以出現幾多次）</span></label>
+          <select id="maxTail">
+            <option value="" selected>無限制</option>
+            <option value="1">1 次</option>
+            <option value="2">2 次</option>
+            <option value="3">3 次</option>
+            <option value="4">4 次</option>
+          </select>
+        </div>
+
+        <div class="field line">
+          <label>6個號碼總和（一般參考可以設喺 90–210 之間，中心位大約 150 左右）</label>
+          <div class="sum-range" id="sumRange">
+            <div class="range-bar">
+              <input id="sumMin" type="range" min="21" max="279" value="90" />
+              <input id="sumMax" type="range" min="21" max="279" value="210" />
+            </div>
+            <div class="range-values">
+              <span class="range-pill" id="sumMinLabel">90</span>
+              <span class="sep">–</span>
+              <span class="range-pill" id="sumMaxLabel">210</span>
             </div>
           </div>
         </div>
