@@ -342,6 +342,10 @@ body {
   margin-top: 0;
 }
 
+.ball.suggested {
+  box-shadow: 0 0 0 3px rgba(255, 170, 64, 0.5);
+}
+
 @media (max-width: 640px) {
   .repeat-row {
     grid-template-columns: 70px repeat(5, minmax(32px, 1fr));

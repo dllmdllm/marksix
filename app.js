@@ -114,7 +114,10 @@ const els = {
   syncStatus: document.getElementById("syncStatus"),
   syncProgress: document.getElementById("syncProgress"),
   syncProgressText: document.getElementById("syncProgressText"),
-  repeatStatus: document.querySelector("#repeatInfo .repeat-status")
+  repeatStatus: document.querySelector("#repeatInfo .repeat-status"),
+  pickDan: document.getElementById("pickDan"),
+  danList: document.getElementById("danList"),
+  danStatus: document.getElementById("danStatus")
 };
 
 const state = {
@@ -127,7 +130,8 @@ const state = {
   analysisDraws: [],
   lastComboKey: null,
   lastComboCount: null,
-  lastExcludedKey: null
+  lastExcludedKey: null,
+  suggested: new Set()
 };
 
 const COLOR_GROUPS = {
@@ -660,6 +664,11 @@ function renderNumberBoard() {
     } else {
       ball.classList.remove("excluded");
     }
+    if (state.suggested.has(num)) {
+      ball.classList.add("suggested");
+    } else {
+      ball.classList.remove("suggested");
+    }
   });
 }
 
@@ -804,6 +813,115 @@ function updateRepeatInfo() {
   if (status) status.textContent = "已載入本地歷史數據";
 }
 
+function getRecentAnalysisDraws(count) {
+  if (!state.analysisDraws.length) return [];
+  return [...state.analysisDraws]
+    .filter((draw) => Array.isArray(draw.numbers) && draw.numbers.length === 6)
+    .sort((a, b) => {
+      const dtA = new Date(normalizeDateString(a.drawDate || "")).getTime() || 0;
+      const dtB = new Date(normalizeDateString(b.drawDate || "")).getTime() || 0;
+      return dtB - dtA;
+    })
+    .slice(0, count);
+}
+
+function computeHotCounts(draws, windowSize) {
+  const sorted = [...draws].sort((a, b) => {
+    const dtA = new Date(normalizeDateString(a.drawDate || "")).getTime() || 0;
+    const dtB = new Date(normalizeDateString(b.drawDate || "")).getTime() || 0;
+    return dtB - dtA;
+  });
+  const slice = sorted.slice(0, windowSize);
+  const counts = new Map();
+  slice.forEach((draw) => {
+    (draw.numbers || []).forEach((num) => {
+      counts.set(num, (counts.get(num) || 0) + 1);
+    });
+  });
+  return counts;
+}
+
+function pickDanNumbers() {
+  if (!els.danList || !els.danStatus) return;
+  const recent = getRecentAnalysisDraws(2);
+  if (recent.length < 2) {
+    els.danStatus.textContent = "最近 2 期資料不足。";
+    els.danList.innerHTML = "";
+    state.suggested = new Set();
+    renderNumberBoard();
+    return;
+  }
+
+  const pool = new Set();
+  recent.forEach((draw) => {
+    draw.numbers.forEach((num) => pool.add(num));
+  });
+  const candidates = [...pool];
+  if (candidates.length < 2) {
+    els.danStatus.textContent = "候選號碼不足。";
+    els.danList.innerHTML = "";
+    state.suggested = new Set();
+    renderNumberBoard();
+    return;
+  }
+
+  const hotCounts = computeHotCounts(state.analysisDraws, parseNumber(els.analysisN?.value) || 20);
+  const scored = candidates.map((num) => ({ num, count: hotCounts.get(num) || 0 }));
+  scored.sort((a, b) => b.count - a.count || a.num - b.num);
+  const hot = scored.slice(0, 3).map((item) => item.num);
+  const cold = scored.slice(-3).map((item) => item.num);
+
+  const isConsecutive = (a, b) => Math.abs(a - b) === 1;
+  const sameColor = (a, b) => getColorClass(a) === getColorClass(b);
+  const sameSize = (a, b) => (a <= 24) === (b <= 24);
+
+  const tryPairs = (listA, listB, rules) => {
+    for (const a of listA) {
+      for (const b of listB) {
+        if (a === b) continue;
+        if (rules.noConsecutive && isConsecutive(a, b)) continue;
+        if (rules.diffColor && sameColor(a, b)) continue;
+        if (rules.diffSize && sameSize(a, b)) continue;
+        return [a, b].sort((x, y) => x - y);
+      }
+    }
+    return null;
+  };
+
+  const rulesets = [
+    { noConsecutive: true, diffColor: true, diffSize: true },
+    { noConsecutive: true, diffColor: true, diffSize: false },
+    { noConsecutive: true, diffColor: false, diffSize: true },
+    { noConsecutive: false, diffColor: true, diffSize: true },
+    { noConsecutive: false, diffColor: false, diffSize: true },
+    { noConsecutive: false, diffColor: true, diffSize: false },
+    { noConsecutive: false, diffColor: false, diffSize: false }
+  ];
+
+  let chosen = null;
+  for (const rules of rulesets) {
+    chosen = tryPairs(hot, cold, rules);
+    if (chosen) break;
+  }
+
+  if (!chosen) {
+    const allNums = scored.map((item) => item.num);
+    for (const rules of rulesets) {
+      chosen = tryPairs(allNums, allNums, rules);
+      if (chosen) break;
+    }
+  }
+
+  if (!chosen) {
+    chosen = candidates.slice(0, 2).sort((a, b) => a - b);
+  }
+
+  state.suggested = new Set(chosen);
+  renderBallList(els.danList, chosen);
+  els.danStatus.textContent = "已根據過去 2 期建議 2 個膽。";
+  renderNumberBoard();
+}
+
 function updateAnalysisView() {
   if (!els.analysisCold || !els.analysisHot || !els.analysisCounts) return;
   if (!state.analysisDraws.length) {
@@ -873,6 +991,9 @@ async function fetchAnalysisData() {
     state.analysisDraws = Array.isArray(data.draws) ? data.draws : [];
     updateAnalysisView();
     updateRepeatInfo();
+    if (els.danStatus) {
+      els.danStatus.textContent = "可點選自動揀膽。";
+    }
   } catch (err) {
     state.analysisDraws = [];
     if (els.analysisStatus) {
@@ -880,6 +1001,9 @@ async function fetchAnalysisData() {
     }
     updateAnalysisView();
     updateRepeatInfo();
+    if (els.danStatus) {
+      els.danStatus.textContent = "連接本地資料後先會有建議。";
+    }
   }
 }
 
@@ -1495,6 +1619,10 @@ if (els.syncAll) {
 
 if (els.syncLatest) {
   els.syncLatest.addEventListener("click", syncLatestDraws);
+}
+
+if (els.pickDan) {
+  els.pickDan.addEventListener("click", pickDanNumbers);
 }
 
 let syncingSize = false;
