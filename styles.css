@@ -514,6 +514,10 @@ body {
   box-shadow: 0 0 0 3px rgba(255, 115, 86, 0.55);
 }
 
+.ball.pickable {
+  cursor: pointer;
+}
+
 .ball.blue {
   border-color: #2d63c8;
   color: #2d63c8;

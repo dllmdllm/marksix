@@ -128,7 +128,10 @@ const els = {
   danReason: document.getElementById("danReason"),
   includeList: document.getElementById("includeList"),
   includeStatus: document.getElementById("includeStatus"),
-  clearInclude: document.getElementById("clearInclude")
+  clearInclude: document.getElementById("clearInclude"),
+  includeSection: document.getElementById("includeSection"),
+  historyLabel: document.getElementById("historyLabel"),
+  historyModeInputs: document.querySelectorAll("input[name=\"historyMode\"]")
 };
 
 const state = {
@@ -143,7 +146,8 @@ const state = {
   lastComboCount: null,
   lastExcludedKey: null,
   suggested: new Set(),
-  included: new Set()
+  included: new Set(),
+  historyMode: "exclude"
 };
 
 const COLOR_GROUPS = {
@@ -287,12 +291,14 @@ function getRowIndex(num) {
 
 function buildExcluded() {
   const set = new Set();
-  state.draws.forEach((draw) => {
-    (draw.drawResult?.drawnNo || []).forEach((n) => set.add(n));
-    if (draw.drawResult?.xDrawnNo) {
-      set.add(draw.drawResult.xDrawnNo);
-    }
-  });
+  if (state.historyMode === "exclude") {
+    state.draws.forEach((draw) => {
+      (draw.drawResult?.drawnNo || []).forEach((n) => set.add(n));
+      if (draw.drawResult?.xDrawnNo) {
+        set.add(draw.drawResult.xDrawnNo);
+      }
+    });
+  }
   state.excluded = set;
   updateAvailableCount();
   renderNumberBoard();
@@ -335,7 +341,7 @@ function renderExcludedSummary() {
   if (!els.excludedSummary) return;
   els.excludedSummary.innerHTML = "";
   if (!state.draws.length) {
-    els.excludedSummary.textContent = "未排除";
+    els.excludedSummary.textContent = state.historyMode === "include" ? "未有歷史組合" : "未排除";
     return;
   }
   state.draws.forEach((draw) => {
@@ -347,6 +353,11 @@ function renderExcludedSummary() {
     drawnNums.forEach((n) => {
       const ball = document.createElement("span");
       ball.className = `ball ${getColorClass(n)} with-element`;
+      ball.dataset.number = String(n);
+      if (state.historyMode === "include") {
+        ball.classList.add("pickable");
+        if (state.included.has(n)) ball.classList.add("included");
+      }
       ball.innerHTML = `
         <span>${pad2(n)}</span>
         <span class="element-inner">${getElementTag(n)}</span>
@@ -358,6 +369,11 @@ function renderExcludedSummary() {
       const special = draw.drawResult.xDrawnNo;
       allNums.push(special);
       ball.className = "ball special with-element";
+      ball.dataset.number = String(special);
+      if (state.historyMode === "include") {
+        ball.classList.add("pickable");
+        if (state.included.has(special)) ball.classList.add("included");
+      }
       ball.innerHTML = `
         <span>${pad2(special)}</span>
         <span class="element-inner">${getElementTag(special)}</span>
@@ -730,6 +746,7 @@ function renderIncludeList() {
 }
 
 function toggleIncludedNumber(num) {
+  if (state.historyMode !== "include") return;
   if (state.excluded.has(num)) {
     if (els.includeStatus) {
       els.includeStatus.textContent = "呢個號碼已被排除。";
@@ -2138,12 +2155,44 @@ if (els.numberBoard) {
   });
 }
 
+if (els.excludedSummary) {
+  els.excludedSummary.addEventListener("click", (event) => {
+    if (state.historyMode !== "include") return;
+    const ball = event.target.closest(".ball");
+    if (!ball || !ball.dataset.number) return;
+    const num = Number(ball.dataset.number);
+    if (!Number.isFinite(num)) return;
+    toggleIncludedNumber(num);
+  });
+}
+
 if (els.clearInclude) {
   els.clearInclude.addEventListener("click", () => {
     state.included.clear();
     renderIncludeList();
     renderNumberBoard();
     autoUpdate();
+  });
+}
+
+if (els.historyModeInputs && els.historyModeInputs.length) {
+  els.historyModeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      const selected = [...els.historyModeInputs].find((item) => item.checked);
+      state.historyMode = selected ? selected.value : "exclude";
+      if (state.historyMode === "exclude") {
+        state.included.clear();
+      }
+      if (els.includeSection) {
+        els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
+      }
+      if (els.historyLabel) {
+        els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選包含）" : "排除期數";
+      }
+      renderIncludeList();
+      buildExcluded();
+      autoUpdate();
+    });
   });
 }
 
@@ -2160,6 +2209,12 @@ if (els.clearInclude) {
 });
 
 renderNumberBoard();
+if (els.includeSection) {
+  els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
+}
+if (els.historyLabel) {
+  els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選包含）" : "排除期數";
+}
 renderIncludeList();
 updateCountConstraints();
 updateSumRangeUI();
