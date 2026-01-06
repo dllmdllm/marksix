@@ -1,4 +1,5 @@
 data/*.csv
 data/*.json
+!data/marksix.json
 tools/__pycache__/
 *.pyc

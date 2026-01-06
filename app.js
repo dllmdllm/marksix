@@ -1,5 +1,6 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
+const STATIC_API = "data/marksix.json";
 const LOCAL_IMPORT_API = "http://127.0.0.1:5177/api/marksix/import";
 const AUTO_SYNC_LATEST = 100;
 const AUTO_SYNC_INTERVAL_HOURS = 24;
@@ -1026,9 +1027,20 @@ async function fetchAnalysisData() {
   if (!els.analysisStatus) return;
   els.analysisStatus.textContent = "連接中…";
   try {
-    const response = await fetch(LOCAL_API, { cache: "no-store" });
-    if (!response.ok) throw new Error("fetch_failed");
-    const data = await response.json();
+    let data = null;
+    try {
+      const response = await fetch(LOCAL_API, { cache: "no-store" });
+      if (response.ok) {
+        data = await response.json();
+      }
+    } catch (err) {
+      data = null;
+    }
+    if (!data) {
+      const response = await fetch(STATIC_API, { cache: "no-store" });
+      if (!response.ok) throw new Error("fetch_failed");
+      data = await response.json();
+    }
     state.analysisDraws = Array.isArray(data.draws) ? data.draws : [];
     updateAnalysisView();
     updateRepeatInfo();
