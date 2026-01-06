@@ -779,7 +779,8 @@ function updateRepeatInfo() {
       .join("／");
 
   const lines = [
-    `歷史上，下一期至少 1 個號碼出現於過去 N 期：${formatRow("至少1個", "atLeast1")}`,
+    "歷史上，下一期",
+    `至少 1 個號碼出現於過去 N 期：${formatRow("至少1個", "atLeast1")}`,
     `至少 2 個：${formatRow("至少2個", "atLeast2")}`,
     `至少 3 個：${formatRow("至少3個", "atLeast3")}`,
     `至少 4 個：${formatRow("至少4個", "atLeast4")}`,
