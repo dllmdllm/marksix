@@ -510,6 +510,10 @@ body {
   color: #d33b35;
 }
 
+.ball.included {
+  box-shadow: 0 0 0 3px rgba(255, 115, 86, 0.55);
+}
+
 .ball.blue {
   border-color: #2d63c8;
   color: #2d63c8;

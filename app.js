@@ -125,7 +125,10 @@ const els = {
   pickDan: document.getElementById("pickDan"),
   danList: document.getElementById("danList"),
   danStatus: document.getElementById("danStatus"),
-  danReason: document.getElementById("danReason")
+  danReason: document.getElementById("danReason"),
+  includeList: document.getElementById("includeList"),
+  includeStatus: document.getElementById("includeStatus"),
+  clearInclude: document.getElementById("clearInclude")
 };
 
 const state = {
@@ -139,7 +142,8 @@ const state = {
   lastComboKey: null,
   lastComboCount: null,
   lastExcludedKey: null,
-  suggested: new Set()
+  suggested: new Set(),
+  included: new Set()
 };
 
 const COLOR_GROUPS = {
@@ -673,6 +677,11 @@ function renderNumberBoard() {
     } else {
       ball.classList.remove("excluded");
     }
+    if (state.included.has(num)) {
+      ball.classList.add("included");
+    } else {
+      ball.classList.remove("included");
+    }
     if (state.suggested.has(num)) {
       ball.classList.add("suggested");
     } else {
@@ -706,6 +715,41 @@ function renderCategoryLists() {
   renderBallList(els.row5List, basePool.filter((n) => n >= 41 && n <= 49));
 
   updateConsecutiveList(basePool);
+}
+
+function renderIncludeList() {
+  if (!els.includeList || !els.includeStatus) return;
+  const nums = [...state.included].sort((a, b) => a - b);
+  if (!nums.length) {
+    els.includeList.innerHTML = "";
+    els.includeStatus.textContent = "未選擇包含號碼。";
+    return;
+  }
+  renderBallList(els.includeList, nums);
+  els.includeStatus.textContent = `已選 ${nums.length} 個包含號碼。`;
+}
+
+function toggleIncludedNumber(num) {
+  if (state.excluded.has(num)) {
+    if (els.includeStatus) {
+      els.includeStatus.textContent = "呢個號碼已被排除。";
+    }
+    return;
+  }
+  if (state.included.has(num)) {
+    state.included.delete(num);
+  } else {
+    if (state.included.size >= 6) {
+      if (els.includeStatus) {
+        els.includeStatus.textContent = "最多只可以選 6 個包含號碼。";
+      }
+      return;
+    }
+    state.included.add(num);
+  }
+  renderIncludeList();
+  renderNumberBoard();
+  autoUpdate();
 }
 
 function renderEmptyMessage(container, message) {
@@ -1211,13 +1255,14 @@ async function fetchAnalysisData() {
   }
 }
 
-function pickRandomSet(pool) {
-  const copy = [...pool];
+function pickRandomSet(pool, included = []) {
+  const copy = [...pool].filter((n) => !included.includes(n));
   for (let i = copy.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  return copy.slice(0, 6).sort((a, b) => a - b);
+  const needed = Math.max(0, 6 - included.length);
+  return [...included, ...copy.slice(0, needed)].sort((a, b) => a - b);
 }
 
 function maxConsecutiveRun(nums) {
@@ -1373,7 +1418,55 @@ function checkFeasibility(filters, pool) {
   if (pool.length < 6) {
     return { ok: false, message: "可用號碼唔夠 6 個。" };
   }
+  const included = [...state.included];
+  if (included.length > 6) {
+    return { ok: false, message: "包含號碼超過 6 個。" };
+  }
+  for (const num of included) {
+    if (!pool.includes(num)) {
+      return { ok: false, message: "包含號碼同排除或條件衝突。" };
+    }
+  }
   const stats = getPoolStats(pool);
+  if (included.length) {
+    const includeStats = getPoolStats(included);
+    if (filters.oddCount !== null && includeStats.odd > filters.oddCount) {
+      return { ok: false, message: "包含號碼超出單數限制。" };
+    }
+    if (filters.evenCount !== null && includeStats.even > filters.evenCount) {
+      return { ok: false, message: "包含號碼超出雙數限制。" };
+    }
+    if (filters.smallCount !== null && includeStats.small > filters.smallCount) {
+      return { ok: false, message: "包含號碼超出細號碼限制。" };
+    }
+    if (filters.bigCount !== null && includeStats.big > filters.bigCount) {
+      return { ok: false, message: "包含號碼超出大號碼限制。" };
+    }
+    if (filters.colorCounts.red !== null && includeStats.red > filters.colorCounts.red) {
+      return { ok: false, message: "包含號碼超出紅色限制。" };
+    }
+    if (filters.colorCounts.blue !== null && includeStats.blue > filters.colorCounts.blue) {
+      return { ok: false, message: "包含號碼超出藍色限制。" };
+    }
+    if (filters.colorCounts.green !== null && includeStats.green > filters.colorCounts.green) {
+      return { ok: false, message: "包含號碼超出綠色限制。" };
+    }
+    if (filters.elementCounts.metal !== null && includeStats.metal > filters.elementCounts.metal) {
+      return { ok: false, message: "包含號碼超出金限制。" };
+    }
+    if (filters.elementCounts.wood !== null && includeStats.wood > filters.elementCounts.wood) {
+      return { ok: false, message: "包含號碼超出木限制。" };
+    }
+    if (filters.elementCounts.water !== null && includeStats.water > filters.elementCounts.water) {
+      return { ok: false, message: "包含號碼超出水限制。" };
+    }
+    if (filters.elementCounts.fire !== null && includeStats.fire > filters.elementCounts.fire) {
+      return { ok: false, message: "包含號碼超出火限制。" };
+    }
+    if (filters.elementCounts.earth !== null && includeStats.earth > filters.elementCounts.earth) {
+      return { ok: false, message: "包含號碼超出土限制。" };
+    }
+  }
   if (filters.oddCount !== null && filters.oddCount > stats.odd) {
     return { ok: false, message: "單數號碼唔夠用。" };
   }
@@ -1416,6 +1509,7 @@ function checkFeasibility(filters, pool) {
 function buildFilterKey(filters, pool) {
   const parts = [
     pool.join(","),
+    [...state.included].sort((a, b) => a - b).join(","),
     filters.sumMin ?? "",
     filters.sumMax ?? "",
     filters.oddCount ?? "",
@@ -1437,11 +1531,17 @@ function buildFilterKey(filters, pool) {
   return parts.join("|");
 }
 
-async function countCombinations(pool, filters, token) {
+async function countCombinations(pool, filters, required, token) {
   const n = pool.length;
   if (n < 6) return 0;
   const feasibility = checkFeasibility(filters, pool);
   if (!feasibility.ok) return 0;
+  const requiredSet = new Set(required || []);
+  const requiredTotal = requiredSet.size;
+  if (requiredTotal > 6) return 0;
+  for (const num of requiredSet) {
+    if (!pool.includes(num)) return 0;
+  }
 
   const prefix = new Array(n + 1).fill(0);
   const suffixOdd = new Array(n + 1).fill(0);
@@ -1456,6 +1556,7 @@ async function countCombinations(pool, filters, token) {
   const suffixWater = new Array(n + 1).fill(0);
   const suffixFire = new Array(n + 1).fill(0);
   const suffixEarth = new Array(n + 1).fill(0);
+  const suffixRequired = new Array(n + 1).fill(0);
 
   for (let i = 0; i < n; i += 1) {
     prefix[i + 1] = prefix[i] + pool[i];
@@ -1475,6 +1576,7 @@ async function countCombinations(pool, filters, token) {
     suffixWater[i] = suffixWater[i + 1] + (element === "水" ? 1 : 0);
     suffixFire[i] = suffixFire[i + 1] + (element === "火" ? 1 : 0);
     suffixEarth[i] = suffixEarth[i + 1] + (element === "土" ? 1 : 0);
+    suffixRequired[i] = suffixRequired[i + 1] + (requiredSet.has(pool[i]) ? 1 : 0);
   }
 
   const { red: redTarget, blue: blueTarget, green: greenTarget } = filters.colorCounts;
@@ -1505,11 +1607,13 @@ async function countCombinations(pool, filters, token) {
     woodCount,
     waterCount,
     fireCount,
-    earthCount
+    earthCount,
+    requiredPicked
   ) {
     if (state.countToken !== token) return 0;
     const remaining = 6 - depth;
     if (remaining === 0) {
+      if (requiredPicked !== requiredTotal) return 0;
       if (filters.sumMin !== null && sum < filters.sumMin) return 0;
       if (filters.sumMax !== null && sum > filters.sumMax) return 0;
       if (filters.oddCount !== null && oddCount !== filters.oddCount) return 0;
@@ -1529,6 +1633,7 @@ async function countCombinations(pool, filters, token) {
     }
 
     if (start + remaining > n) return 0;
+    if (requiredPicked + suffixRequired[start] < requiredTotal) return 0;
 
     if (filters.sumMax !== null) {
       const minSum = prefix[start + remaining] - prefix[start];
@@ -1628,6 +1733,7 @@ async function countCombinations(pool, filters, token) {
       const nextWater = waterCount + (element === "水" ? 1 : 0);
       const nextFire = fireCount + (element === "火" ? 1 : 0);
       const nextEarth = earthCount + (element === "土" ? 1 : 0);
+      const nextRequired = requiredPicked + (requiredSet.has(num) ? 1 : 0);
       const nextSmall = smallCount + (num <= 24 ? 1 : 0);
       const nextBig = bigCount + (num >= 25 ? 1 : 0);
       const tail = num % 10;
@@ -1662,13 +1768,14 @@ async function countCombinations(pool, filters, token) {
         nextWood,
         nextWater,
         nextFire,
-        nextEarth
+        nextEarth,
+        nextRequired
       );
     }
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -1744,6 +1851,15 @@ function generateSets(poolOverride, filtersOverride) {
     setGenerateStatus(`${feasibility.message}請減少排除條件。`);
     return [];
   }
+  const included = [...state.included].sort((a, b) => a - b);
+  if (included.length > 6) {
+    setGenerateStatus("包含號碼超過 6 個。");
+    return [];
+  }
+  if (included.some((n) => !pool.includes(n))) {
+    setGenerateStatus("包含號碼同排除或條件衝突。");
+    return [];
+  }
 
   const total = Math.min(
     Math.max(parseNumber(els.ticketCount?.value) || 10, 10),
@@ -1755,7 +1871,7 @@ function generateSets(poolOverride, filtersOverride) {
   for (let i = 0; i < total; i += 1) {
     let found = null;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const nums = pickRandomSet(pool);
+      const nums = pickRandomSet(pool, included);
       if (isValid(nums, filters)) {
         found = nums;
         break;
@@ -1962,13 +2078,14 @@ function scheduleComboCount(filters, pool, key) {
     state.countToken = token;
     const activeFilters = filters || readFilters();
     const activePool = pool || getFilteredPool(activeFilters);
+    const activeRequired = [...state.included];
     const comboKey = key || buildFilterKey(activeFilters, activePool);
     if (comboKey === state.lastComboKey && state.lastComboCount !== null) {
       setComboCount(`可組合：${state.lastComboCount.toLocaleString("en-US")}`);
       return;
     }
     setComboCount("可組合：計算中…");
-    const count = await countCombinations(activePool, activeFilters, token);
+    const count = await countCombinations(activePool, activeFilters, activeRequired, token);
     if (state.countToken !== token) return;
     state.lastComboKey = comboKey;
     state.lastComboCount = count;
@@ -2011,6 +2128,25 @@ function autoUpdate() {
 
 els.generateBtn.addEventListener("click", autoUpdate);
 
+if (els.numberBoard) {
+  els.numberBoard.addEventListener("click", (event) => {
+    const ball = event.target.closest(".ball");
+    if (!ball || !ball.dataset.number) return;
+    const num = Number(ball.dataset.number);
+    if (!Number.isFinite(num)) return;
+    toggleIncludedNumber(num);
+  });
+}
+
+if (els.clearInclude) {
+  els.clearInclude.addEventListener("click", () => {
+    state.included.clear();
+    renderIncludeList();
+    renderNumberBoard();
+    autoUpdate();
+  });
+}
+
 [
   els.sumMin,
   els.sumMax,
@@ -2024,6 +2160,7 @@ els.generateBtn.addEventListener("click", autoUpdate);
 });
 
 renderNumberBoard();
+renderIncludeList();
 updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
