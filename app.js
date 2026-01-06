@@ -285,7 +285,7 @@ function buildExcluded() {
 function updateAvailableCount() {
   const filters = readFilters();
   const pool = getFilteredPool(filters);
-  els.availableCount.textContent = `可用號碼：${pool.length}`;
+  els.availableCount.textContent = `（可用號碼：${pool.length}）`;
 }
 
 function setComboCount(message) {
