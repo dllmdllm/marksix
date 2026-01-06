@@ -620,6 +620,22 @@ body {
   padding-left: 62px;
 }
 
+.consecutive-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-left: 0;
+}
+
+.consecutive-group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+}
+
 .count-line-list .ball {
   width: 30px;
   height: 30px;

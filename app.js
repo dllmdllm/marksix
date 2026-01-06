@@ -1097,13 +1097,22 @@ function updateConsecutiveList(pool) {
     renderEmptyMessage(els.consecutiveList, "未有連號組合");
     return;
   }
-  const balls = [];
+  els.consecutiveList.innerHTML = "";
   starts.forEach((start) => {
+    const group = document.createElement("div");
+    group.className = "consecutive-group";
     for (let offset = 0; offset < length; offset += 1) {
-      balls.push(start + offset);
+      const num = start + offset;
+      const ball = document.createElement("span");
+      ball.className = `ball ${getColorClass(num)} with-element`;
+      ball.innerHTML = `
+        <span>${pad2(num)}</span>
+        <span class="element-inner">${getElementTag(num)}</span>
+      `;
+      group.appendChild(ball);
     }
+    els.consecutiveList.appendChild(group);
   });
-  renderBallList(els.consecutiveList, balls);
 }
 
 function updateAnalysisView() {
