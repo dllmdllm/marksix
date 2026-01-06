@@ -446,6 +446,13 @@ body {
   color: var(--muted);
 }
 
+.excluded-detail,
+.result-detail {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
 .excluded-numbers .ball {
   width: 42px;
   height: 42px;

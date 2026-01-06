@@ -362,13 +362,17 @@ function renderExcludedSummary() {
       numsWrap.appendChild(ball);
     }
 
-    const sum = allNums.reduce((acc, n) => acc + n, 0);
+    const { sumText, detailText } = formatSummaryLine(allNums);
     const stats = document.createElement("div");
     stats.className = "excluded-stats";
-    stats.textContent = `總和 ${sum}，平均數 ${formatAverage(sum, allNums.length)}`;
+    stats.textContent = sumText;
+    const detail = document.createElement("div");
+    detail.className = "excluded-detail";
+    detail.textContent = detailText;
 
     metaWrap.appendChild(meta);
     metaWrap.appendChild(stats);
+    metaWrap.appendChild(detail);
     line.appendChild(metaWrap);
     line.appendChild(numsWrap);
     els.excludedSummary.appendChild(line);
@@ -962,6 +966,95 @@ function pickDanNumbers() {
     els.danReason.textContent = `原因：${reason}，${detail}，${consecutive}`;
   }
   renderNumberBoard();
+}
+
+function computeColdHotSets() {
+  if (!state.analysisDraws.length) return null;
+  const n = parseNumber(els.analysisN?.value) || 20;
+  const sorted = [...state.analysisDraws].sort((a, b) => {
+    const dtA = new Date(normalizeDateString(a.drawDate || "")).getTime() || 0;
+    const dtB = new Date(normalizeDateString(b.drawDate || "")).getTime() || 0;
+    return dtB - dtA;
+  });
+  const slice = sorted.slice(0, n);
+  if (!slice.length) return null;
+  const counts = Array.from({ length: 50 }, () => 0);
+  slice.forEach((draw) => {
+    (draw.numbers || []).forEach((num) => {
+      if (num >= 1 && num <= 49) counts[num] += 1;
+    });
+  });
+  const cold = new Set();
+  const ranked = [];
+  for (let i = 1; i <= 49; i += 1) {
+    if (counts[i] === 0) cold.add(i);
+    ranked.push({ num: i, count: counts[i] });
+  }
+  ranked.sort((a, b) => b.count - a.count || a.num - b.num);
+  const nonZero = ranked.filter((item) => item.count > 0);
+  if (!nonZero.length) return { cold, hot: new Set() };
+  const cutoff = nonZero.length >= 10 ? nonZero[9].count : nonZero[nonZero.length - 1].count;
+  const hot = new Set(nonZero.filter((item) => item.count >= cutoff).map((item) => item.num));
+  return { cold, hot };
+}
+
+function summarizeNumbers(nums) {
+  const summary = {
+    sum: nums.reduce((acc, n) => acc + n, 0),
+    odd: 0,
+    even: 0,
+    small: 0,
+    big: 0,
+    red: 0,
+    blue: 0,
+    green: 0,
+    metal: 0,
+    wood: 0,
+    water: 0,
+    fire: 0,
+    earth: 0
+  };
+  nums.forEach((n) => {
+    if (n % 2 === 1) summary.odd += 1;
+    else summary.even += 1;
+    if (n <= 24) summary.small += 1;
+    else summary.big += 1;
+    const color = getColorClass(n);
+    if (color === "red") summary.red += 1;
+    else if (color === "blue") summary.blue += 1;
+    else summary.green += 1;
+    const element = getElementTag(n);
+    if (element === "金") summary.metal += 1;
+    else if (element === "木") summary.wood += 1;
+    else if (element === "水") summary.water += 1;
+    else if (element === "火") summary.fire += 1;
+    else summary.earth += 1;
+  });
+  return summary;
+}
+
+function formatSummaryLine(nums) {
+  const { sum, odd, even, small, big, red, blue, green, metal, wood, water, fire, earth } =
+    summarizeNumbers(nums);
+  const avg = formatAverage(sum, nums.length);
+  const parts = [
+    `單${odd} 雙${even}`,
+    `細${small} 大${big}`,
+    `紅${red} 藍${blue} 綠${green}`,
+    `金${metal} 木${wood} 水${water} 火${fire} 土${earth}`
+  ];
+  const coldHot = computeColdHotSets();
+  if (coldHot) {
+    const coldCount = nums.filter((n) => coldHot.cold.has(n)).length;
+    const hotCount = nums.filter((n) => coldHot.hot.has(n)).length;
+    parts.push(`冷${coldCount} 熱${hotCount}`);
+  } else {
+    parts.push("冷- 熱-");
+  }
+  return {
+    sumText: `總和 ${sum}，平均數 ${avg}`,
+    detailText: parts.join("／")
+  };
 }
 
 function updateAnalysisView() {
@@ -1625,8 +1718,7 @@ function renderResults(sets) {
   els.resultList.innerHTML = "";
   if (!sets.length) return;
   sets.forEach((nums, idx) => {
-    const sum = nums.reduce((acc, n) => acc + n, 0);
-    const avgText = formatAverage(sum, nums.length);
+    const { sumText, detailText } = formatSummaryLine(nums);
     const card = document.createElement("div");
     card.className = "result-card";
     card.innerHTML = `
@@ -1642,7 +1734,8 @@ function renderResults(sets) {
           )
           .join("")}
       </div>
-      <div class="result-stats">總和 ${sum}，平均數 ${avgText}</div>
+      <div class="result-stats">${sumText}</div>
+      <div class="result-detail">${detailText}</div>
     `;
     els.resultList.appendChild(card);
   });
