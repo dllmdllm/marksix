@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import gzip
 import sys
 import threading
 import time
@@ -21,13 +22,21 @@ DRAW_FRAGMENT = """fragment lotteryDrawsFragment on LotteryDraw {
     drawDate
     status
     snowballCode
+    snowballName_en
     snowballName_ch
     lotteryPool {
       sell
+      status
       totalInvestment
       jackpot
+      unitBet
       estimatedPrize
       derivedFirstPrizeDiv
+      lotteryPrizes {
+        type
+        winningUnit
+        dividend
+      }
     }
     drawResult {
       drawnNo
@@ -90,7 +99,10 @@ def api_post(variables):
         }
     )
     with urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+        raw = resp.read()
+        if raw[:2] == b"\x1f\x8b":
+            raw = gzip.decompress(raw)
+        data = json.loads(raw.decode("utf-8"))
         if data.get("errors"):
             raise RuntimeError(data["errors"])
         return data
@@ -218,20 +230,35 @@ def import_draws(path, draws):
     write_csv(path, rows)
     return appended, len(rows)
 
+def format_api_date(value):
+    if isinstance(value, datetime):
+        return value.strftime("%Y%m%d")
+    if isinstance(value, date):
+        return value.strftime("%Y%m%d")
+    return str(value)
+
 
 def download_all(path, start_year, end_year):
     rows = []
     keys = set()
+    window_days = 90
     for year in range(start_year, end_year + 1):
-        start_date = f"{year}-01-01"
-        end_date = f"{year}-12-31"
-        draws = fetch_draws(start_date, end_date)
-        for draw in draws:
-            key = draw_key(draw)
-            if key in keys:
-                continue
-            keys.add(key)
-            rows.append(row_from_draw(draw))
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
+        current = start_date
+        while current <= end_date:
+            window_end = min(current + timedelta(days=window_days - 1), end_date)
+            draws = fetch_draws(
+                format_api_date(current),
+                format_api_date(window_end)
+            )
+            for draw in draws:
+                key = draw_key(draw)
+                if key in keys:
+                    continue
+                keys.add(key)
+                rows.append(row_from_draw(draw))
+            current = window_end + timedelta(days=1)
     sort_rows(rows)
     write_csv(path, rows)
 
@@ -245,8 +272,8 @@ def update_csv(path):
             last_date = dt
     if last_date is None:
         last_date = date(1993, 1, 1)
-    start_date = (last_date - timedelta(days=14)).strftime("%Y-%m-%d")
-    end_date = (date.today() + timedelta(days=7)).strftime("%Y-%m-%d")
+    start_date = format_api_date(last_date - timedelta(days=14))
+    end_date = format_api_date(date.today() + timedelta(days=7))
     draws = fetch_draws(start_date, end_date)
     appended = 0
     for draw in draws:
