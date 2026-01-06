@@ -354,6 +354,9 @@ body {
   .repeat-cell {
     padding: 4px 2px;
   }
+  .analysis-actions {
+    display: none;
+  }
 }
 
 .note {
