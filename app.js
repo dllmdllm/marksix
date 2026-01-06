@@ -84,6 +84,11 @@ const els = {
   waterList: document.getElementById("waterList"),
   fireList: document.getElementById("fireList"),
   earthList: document.getElementById("earthList"),
+  row1List: document.getElementById("row1List"),
+  row2List: document.getElementById("row2List"),
+  row3List: document.getElementById("row3List"),
+  row4List: document.getElementById("row4List"),
+  row5List: document.getElementById("row5List"),
   metalCount: document.getElementById("metalCount"),
   woodCount: document.getElementById("woodCount"),
   waterCount: document.getElementById("waterCount"),
@@ -693,6 +698,11 @@ function renderCategoryLists() {
   renderBallList(els.waterList, basePool.filter((n) => getElementTag(n) === "水"));
   renderBallList(els.fireList, basePool.filter((n) => getElementTag(n) === "火"));
   renderBallList(els.earthList, basePool.filter((n) => getElementTag(n) === "土"));
+  renderBallList(els.row1List, basePool.filter((n) => n >= 1 && n <= 10));
+  renderBallList(els.row2List, basePool.filter((n) => n >= 11 && n <= 20));
+  renderBallList(els.row3List, basePool.filter((n) => n >= 21 && n <= 30));
+  renderBallList(els.row4List, basePool.filter((n) => n >= 31 && n <= 40));
+  renderBallList(els.row5List, basePool.filter((n) => n >= 41 && n <= 49));
 }
 
 function renderEmptyMessage(container, message) {
