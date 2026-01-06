@@ -113,7 +113,8 @@ const els = {
   syncLatest: document.getElementById("syncLatest"),
   syncStatus: document.getElementById("syncStatus"),
   syncProgress: document.getElementById("syncProgress"),
-  syncProgressText: document.getElementById("syncProgressText")
+  syncProgressText: document.getElementById("syncProgressText"),
+  repeatStatus: document.querySelector("#repeatInfo .repeat-status")
 };
 
 const state = {
@@ -760,33 +761,36 @@ function computeRepeatRates(draws, maxN = 5) {
 
 function updateRepeatInfo() {
   if (!els.repeatInfo) return;
+  const cells = els.repeatInfo.querySelectorAll(".repeat-cell");
+  const status = els.repeatStatus;
   if (!state.analysisDraws.length) {
-    els.repeatInfo.textContent = "連接本地資料後先會顯示歷史比例。";
+    cells.forEach((cell) => {
+      cell.textContent = "-";
+    });
+    if (status) status.textContent = "連接本地資料後先會顯示歷史比例。";
     return;
   }
   const rates = computeRepeatRates(state.analysisDraws, 5);
   if (!rates.filter((value) => value !== null).length) {
-    els.repeatInfo.textContent = "歷史比例未有足夠資料。";
+    cells.forEach((cell) => {
+      cell.textContent = "-";
+    });
+    if (status) status.textContent = "歷史比例未有足夠資料。";
     return;
   }
-  const formatRow = (label, key) =>
-    rates
-      .map((rate, idx) => {
-        if (rate === null) return null;
-        return `${idx + 1}期 ${(rate[key] * 100).toFixed(1)}%`;
-      })
-      .filter(Boolean)
-      .join("／");
-
-  const lines = [
-    "歷史上，下一期",
-    `至少 1 個號碼出現於過去 N 期：${formatRow("至少1個", "atLeast1")}`,
-    `至少 2 個：${formatRow("至少2個", "atLeast2")}`,
-    `至少 3 個：${formatRow("至少3個", "atLeast3")}`,
-    `至少 4 個：${formatRow("至少4個", "atLeast4")}`,
-    `至少 5 個：${formatRow("至少5個", "atLeast5")}`
-  ];
-  els.repeatInfo.innerHTML = lines.join("<br>");
+  const keys = ["atLeast1", "atLeast2", "atLeast3", "atLeast4", "atLeast5"];
+  keys.forEach((key) => {
+    const rowCells = els.repeatInfo.querySelectorAll(`.repeat-cell[data-repeat="${key}"]`);
+    rowCells.forEach((cell, idx) => {
+      const rate = rates[idx];
+      if (!rate) {
+        cell.textContent = "-";
+      } else {
+        cell.textContent = `${(rate[key] * 100).toFixed(1)}%`;
+      }
+    });
+  });
+  if (status) status.textContent = "已載入本地歷史數據";
 }
 
 function updateAnalysisView() {
