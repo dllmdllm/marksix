@@ -64,7 +64,7 @@ const els = {
   comboCount: document.getElementById("comboCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
-  minRows: document.getElementById("minRows"),
+  rowLimit: document.getElementById("rowLimit"),
   redCount: document.getElementById("redCount"),
   blueCount: document.getElementById("blueCount"),
   greenCount: document.getElementById("greenCount"),
@@ -816,6 +816,13 @@ function maxTailCount(nums) {
   return Math.max(...counts.values());
 }
 
+function getSelectedRows(container) {
+  if (!container) return [];
+  return [...container.querySelectorAll("input[type=checkbox]:checked")]
+    .map((input) => parseNumber(input.dataset.row))
+    .filter((value) => value !== null);
+}
+
 function readFilters() {
   const colorCounts = {
     red: getSelectedCount(els.redCount),
@@ -848,6 +855,8 @@ function readFilters() {
   const sumMaxValue = parseNumber(els.sumMax.value);
   const sumMin = sumMinValue !== null && sumMaxValue !== null ? Math.min(sumMinValue, sumMaxValue) : sumMinValue;
   const sumMax = sumMinValue !== null && sumMaxValue !== null ? Math.max(sumMinValue, sumMaxValue) : sumMaxValue;
+  const rowLimit = getSelectedRows(els.rowLimit);
+  const rowLimitSet = rowLimit.length ? new Set(rowLimit) : null;
 
   return {
     sumMin,
@@ -863,7 +872,8 @@ function readFilters() {
     maxTail: parseNumber(els.maxTail.value),
     noAllOdd: false,
     noAllEven: false,
-    minRows: parseNumber(els.minRows?.value) || 1,
+    rowLimit,
+    rowLimitSet,
     colorCounts,
     elementCounts
   };
@@ -875,8 +885,10 @@ function getFilteredPool(filters) {
   const hasColorLimit = Object.values(colorCounts).some((val) => val !== null);
   const elementCounts = filters.elementCounts;
   const hasElementLimit = Object.values(elementCounts).some((val) => val !== null);
+  const rowLimitSet = filters.rowLimitSet;
   for (let i = 1; i <= 49; i += 1) {
     if (state.excluded.has(i)) continue;
+    if (rowLimitSet && !rowLimitSet.has(getRowIndex(i))) continue;
     if (hasColorLimit) {
       const color = getColorClass(i);
       if (color === "red" && colorCounts.red === 0) continue;
@@ -909,11 +921,9 @@ function getPoolStats(pool) {
     wood: 0,
     water: 0,
     fire: 0,
-    earth: 0,
-    rows: new Set()
+    earth: 0
   };
   pool.forEach((num) => {
-    stats.rows.add(getRowIndex(num));
     if (num % 2 === 1) stats.odd += 1;
     else stats.even += 1;
     if (num <= 24) stats.small += 1;
@@ -973,9 +983,6 @@ function checkFeasibility(filters, pool) {
   if (filters.elementCounts.earth !== null && filters.elementCounts.earth > stats.earth) {
     return { ok: false, message: "土屬號碼唔夠用。" };
   }
-  if (filters.minRows > 1 && stats.rows.size < filters.minRows) {
-    return { ok: false, message: "行數唔夠用。" };
-  }
   return { ok: true };
 }
 
@@ -990,7 +997,7 @@ function buildFilterKey(filters, pool) {
     filters.bigCount ?? "",
     filters.maxConsecutive ?? "",
     filters.maxTail ?? "",
-    filters.minRows ?? "",
+    (filters.rowLimit || []).join(","),
     filters.colorCounts.red ?? "",
     filters.colorCounts.blue ?? "",
     filters.colorCounts.green ?? "",
@@ -1001,16 +1008,6 @@ function buildFilterKey(filters, pool) {
     filters.elementCounts.earth ?? ""
   ];
   return parts.join("|");
-}
-
-function popcount(mask) {
-  let count = 0;
-  let m = mask;
-  while (m) {
-    m &= m - 1;
-    count += 1;
-  }
-  return count;
 }
 
 async function countCombinations(pool, filters, token) {
@@ -1024,7 +1021,6 @@ async function countCombinations(pool, filters, token) {
   const suffixEven = new Array(n + 1).fill(0);
   const suffixBig = new Array(n + 1).fill(0);
   const suffixSmall = new Array(n + 1).fill(0);
-  const suffixRowsMask = new Array(n + 1).fill(0);
   const suffixRed = new Array(n + 1).fill(0);
   const suffixBlue = new Array(n + 1).fill(0);
   const suffixGreen = new Array(n + 1).fill(0);
@@ -1042,7 +1038,6 @@ async function countCombinations(pool, filters, token) {
     suffixEven[i] = suffixEven[i + 1] + (pool[i] % 2 === 0 ? 1 : 0);
     suffixBig[i] = suffixBig[i + 1] + (pool[i] >= 25 ? 1 : 0);
     suffixSmall[i] = suffixSmall[i + 1] + (pool[i] <= 24 ? 1 : 0);
-    suffixRowsMask[i] = suffixRowsMask[i + 1] | (1 << (getRowIndex(pool[i]) - 1));
     const color = getColorClass(pool[i]);
     suffixRed[i] = suffixRed[i + 1] + (color === "red" ? 1 : 0);
     suffixBlue[i] = suffixBlue[i + 1] + (color === "blue" ? 1 : 0);
@@ -1076,7 +1071,6 @@ async function countCombinations(pool, filters, token) {
     tails,
     lastNum,
     runLen,
-    rowsMask,
     redCount,
     blueCount,
     greenCount,
@@ -1103,7 +1097,6 @@ async function countCombinations(pool, filters, token) {
       if (waterTarget !== null && waterCount !== waterTarget) return 0;
       if (fireTarget !== null && fireCount !== fireTarget) return 0;
       if (earthTarget !== null && earthCount !== earthTarget) return 0;
-      if (filters.minRows > 1 && popcount(rowsMask) < filters.minRows) return 0;
       if (filters.maxTail !== null && Math.max(...tails) > filters.maxTail) return 0;
       return 1;
     }
@@ -1193,11 +1186,6 @@ async function countCombinations(pool, filters, token) {
       if (earthTarget < minEarth || earthTarget > maxEarth) return 0;
     }
 
-    if (filters.minRows > 1) {
-      const possibleRows = popcount(rowsMask | suffixRowsMask[start]);
-      if (possibleRows < filters.minRows) return 0;
-    }
-
     let total = 0;
     for (let i = start; i <= n - remaining; i += 1) {
       const num = pool[i];
@@ -1223,7 +1211,6 @@ async function countCombinations(pool, filters, token) {
       }
       const nextRun = lastNum !== null && num === lastNum + 1 ? runLen + 1 : 1;
       if (nextRun > filters.maxConsecutive) continue;
-      const nextRows = rowsMask | (1 << (getRowIndex(num) - 1));
 
       iterations += 1;
       if (iterations % 2000 === 0) {
@@ -1241,7 +1228,6 @@ async function countCombinations(pool, filters, token) {
         nextTails,
         num,
         nextRun,
-        nextRows,
         nextRed,
         nextBlue,
         nextGreen,
@@ -1255,7 +1241,7 @@ async function countCombinations(pool, filters, token) {
     return total;
   }
 
-  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  return dfs(0, 0, 0, 0, 0, 0, new Array(10).fill(0), null, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 function isValid(nums, filters) {
@@ -1314,9 +1300,10 @@ function isValid(nums, filters) {
   if (filters.maxTail !== null && maxTailCount(nums) > filters.maxTail) {
     return false;
   }
-  if (filters.minRows > 1) {
-    const rowCount = new Set(nums.map((n) => getRowIndex(n))).size;
-    if (rowCount < filters.minRows) return false;
+  if (filters.rowLimitSet) {
+    for (const num of nums) {
+      if (!filters.rowLimitSet.has(getRowIndex(num))) return false;
+    }
   }
   return true;
 }
@@ -1523,6 +1510,10 @@ bindCountGroup(els.waterCount, "water");
 bindCountGroup(els.fireCount, "fire");
 bindCountGroup(els.earthCount, "earth");
 
+if (els.rowLimit) {
+  els.rowLimit.addEventListener("change", autoUpdate);
+}
+
 function handleExcludeChange() {
   buildExcluded();
   autoUpdate();
@@ -1587,7 +1578,6 @@ els.generateBtn.addEventListener("click", autoUpdate);
   els.sumMax,
   els.maxConsecutive,
   els.maxTail,
-  els.minRows,
   els.ticketCount
 ].forEach((input) => {
   if (!input) return;
