@@ -133,13 +133,36 @@
         </div>
 
         <div class="field line" id="includeSection">
-          <label>包含號碼</label>
+          <label>膽號（來自歷史組合）</label>
           <div class="inline">
-            <button id="clearInclude" class="ghost-btn">清除</button>
+            <button id="clearInclude" class="ghost-btn">清除膽號</button>
           </div>
-          <p class="hint">可以喺號碼盤點選，最多 6 個。</p>
+          <p class="hint">由歷史組合點選，最多 6 個。</p>
           <div id="includeList" class="ball-list"></div>
-          <p id="includeStatus" class="hint">未選擇包含號碼。</p>
+          <p id="includeStatus" class="hint">未選擇膽號。</p>
+        </div>
+
+        <div class="field line" id="dragSection">
+          <label>拖碼（可用號碼）</label>
+          <div class="inline">
+            <select id="dragCount">
+              <option value="" selected>無限制</option>
+              <option value="1">1 個</option>
+              <option value="2">2 個</option>
+              <option value="3">3 個</option>
+              <option value="4">4 個</option>
+              <option value="5">5 個</option>
+              <option value="6">6 個</option>
+              <option value="7">7 個</option>
+              <option value="8">8 個</option>
+              <option value="9">9 個</option>
+              <option value="10">10 個</option>
+            </select>
+            <button id="clearDrag" class="ghost-btn">清除拖碼</button>
+          </div>
+          <p class="hint">拖碼唔限歷史組合，用號碼盤點選。</p>
+          <div id="dragList" class="ball-list"></div>
+          <p id="dragStatus" class="hint">未選擇拖碼。</p>
         </div>
 
         <div class="field line">

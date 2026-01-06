@@ -518,6 +518,10 @@ body {
   cursor: pointer;
 }
 
+.ball.dragged {
+  box-shadow: 0 0 0 3px rgba(96, 167, 255, 0.55);
+}
+
 .ball.blue {
   border-color: #2d63c8;
   color: #2d63c8;

@@ -129,6 +129,11 @@ const els = {
   includeList: document.getElementById("includeList"),
   includeStatus: document.getElementById("includeStatus"),
   clearInclude: document.getElementById("clearInclude"),
+  dragSection: document.getElementById("dragSection"),
+  dragCount: document.getElementById("dragCount"),
+  dragList: document.getElementById("dragList"),
+  dragStatus: document.getElementById("dragStatus"),
+  clearDrag: document.getElementById("clearDrag"),
   includeSection: document.getElementById("includeSection"),
   historyLabel: document.getElementById("historyLabel"),
   historyModeInputs: document.querySelectorAll("input[name=\"historyMode\"]")
@@ -147,6 +152,7 @@ const state = {
   lastExcludedKey: null,
   suggested: new Set(),
   included: new Set(),
+  dragged: new Set(),
   historyMode: "exclude"
 };
 
@@ -698,6 +704,11 @@ function renderNumberBoard() {
     } else {
       ball.classList.remove("included");
     }
+    if (state.dragged.has(num)) {
+      ball.classList.add("dragged");
+    } else {
+      ball.classList.remove("dragged");
+    }
     if (state.suggested.has(num)) {
       ball.classList.add("suggested");
     } else {
@@ -738,11 +749,11 @@ function renderIncludeList() {
   const nums = [...state.included].sort((a, b) => a - b);
   if (!nums.length) {
     els.includeList.innerHTML = "";
-    els.includeStatus.textContent = "未選擇包含號碼。";
+    els.includeStatus.textContent = "未選擇膽號。";
     return;
   }
   renderBallList(els.includeList, nums);
-  els.includeStatus.textContent = `已選 ${nums.length} 個包含號碼。`;
+  els.includeStatus.textContent = `已選 ${nums.length} 個膽號。`;
 }
 
 function toggleIncludedNumber(num) {
@@ -758,13 +769,54 @@ function toggleIncludedNumber(num) {
   } else {
     if (state.included.size >= 6) {
       if (els.includeStatus) {
-        els.includeStatus.textContent = "最多只可以選 6 個包含號碼。";
+        els.includeStatus.textContent = "最多只可以選 6 個膽號。";
       }
       return;
     }
     state.included.add(num);
+    if (state.dragged.has(num)) {
+      state.dragged.delete(num);
+    }
   }
   renderIncludeList();
+  renderDragList();
+  renderNumberBoard();
+  autoUpdate();
+}
+
+function renderDragList() {
+  if (!els.dragList || !els.dragStatus) return;
+  const nums = [...state.dragged].sort((a, b) => a - b);
+  if (!nums.length) {
+    els.dragList.innerHTML = "";
+    els.dragStatus.textContent = "未選擇拖碼。";
+    return;
+  }
+  renderBallList(els.dragList, nums);
+  els.dragStatus.textContent = `已選 ${nums.length} 個拖碼。`;
+}
+
+function toggleDragNumber(num) {
+  if (state.historyMode !== "include") return;
+  if (state.included.has(num)) {
+    if (els.dragStatus) {
+      els.dragStatus.textContent = "呢個號碼已選為膽號。";
+    }
+    return;
+  }
+  const limit = parseNumber(els.dragCount?.value);
+  if (limit !== null && !state.dragged.has(num) && state.dragged.size >= limit) {
+    if (els.dragStatus) {
+      els.dragStatus.textContent = `最多只可以選 ${limit} 個拖碼。`;
+    }
+    return;
+  }
+  if (state.dragged.has(num)) {
+    state.dragged.delete(num);
+  } else {
+    state.dragged.add(num);
+  }
+  renderDragList();
   renderNumberBoard();
   autoUpdate();
 }
@@ -1026,6 +1078,12 @@ function pickDanNumbers() {
   state.suggested = new Set(chosen);
   renderBallList(els.danList, chosen);
   els.danStatus.textContent = "已根據過去 2 期建議 2 個膽。";
+  if (state.historyMode === "include") {
+    state.included = new Set(chosen);
+    state.dragged = new Set([...state.dragged].filter((n) => !state.included.has(n)));
+    renderIncludeList();
+    renderDragList();
+  }
   if (els.danReason) {
     const detail = chosen
       .map((num) => {
@@ -1436,52 +1494,65 @@ function checkFeasibility(filters, pool) {
     return { ok: false, message: "可用號碼唔夠 6 個。" };
   }
   const included = [...state.included];
+  const dragged = [...state.dragged];
   if (included.length > 6) {
-    return { ok: false, message: "包含號碼超過 6 個。" };
+    return { ok: false, message: "膽號超過 6 個。" };
   }
   for (const num of included) {
     if (!pool.includes(num)) {
-      return { ok: false, message: "包含號碼同排除或條件衝突。" };
+      return { ok: false, message: "膽號同排除或條件衝突。" };
+    }
+  }
+  if (state.historyMode === "include" && dragged.length) {
+    const dragPool = dragged.filter((n) => pool.includes(n));
+    if (dragPool.length + included.length < 6) {
+      return { ok: false, message: "拖碼數量唔夠組合 6 個。" };
+    }
+  }
+  if (state.historyMode === "include") {
+    const limit = parseNumber(els.dragCount?.value);
+    if (limit !== null && dragged.length !== limit) {
+      return { ok: false, message: "拖碼數量未符合設定。" };
     }
   }
   const stats = getPoolStats(pool);
   if (included.length) {
     const includeStats = getPoolStats(included);
     if (filters.oddCount !== null && includeStats.odd > filters.oddCount) {
-      return { ok: false, message: "包含號碼超出單數限制。" };
+      return { ok: false, message: "膽號超出單數限制。" };
     }
     if (filters.evenCount !== null && includeStats.even > filters.evenCount) {
-      return { ok: false, message: "包含號碼超出雙數限制。" };
+      return { ok: false, message: "膽號超出雙數限制。" };
     }
     if (filters.smallCount !== null && includeStats.small > filters.smallCount) {
-      return { ok: false, message: "包含號碼超出細號碼限制。" };
+      return { ok: false, message: "膽號超出細號碼限制。" };
     }
     if (filters.bigCount !== null && includeStats.big > filters.bigCount) {
-      return { ok: false, message: "包含號碼超出大號碼限制。" };
+      return { ok: false, message: "膽號超出大號碼限制。" };
     }
     if (filters.colorCounts.red !== null && includeStats.red > filters.colorCounts.red) {
-      return { ok: false, message: "包含號碼超出紅色限制。" };
+      return { ok: false, message: "膽號超出紅色限制。" };
     }
     if (filters.colorCounts.blue !== null && includeStats.blue > filters.colorCounts.blue) {
-      return { ok: false, message: "包含號碼超出藍色限制。" };
+      return { ok: false, message: "膽號超出藍色限制。" };
     }
     if (filters.colorCounts.green !== null && includeStats.green > filters.colorCounts.green) {
-      return { ok: false, message: "包含號碼超出綠色限制。" };
+      return { ok: false, message: "膽號超出綠色限制。" };
     }
     if (filters.elementCounts.metal !== null && includeStats.metal > filters.elementCounts.metal) {
-      return { ok: false, message: "包含號碼超出金限制。" };
+      return { ok: false, message: "膽號超出金限制。" };
     }
     if (filters.elementCounts.wood !== null && includeStats.wood > filters.elementCounts.wood) {
-      return { ok: false, message: "包含號碼超出木限制。" };
+      return { ok: false, message: "膽號超出木限制。" };
     }
     if (filters.elementCounts.water !== null && includeStats.water > filters.elementCounts.water) {
-      return { ok: false, message: "包含號碼超出水限制。" };
+      return { ok: false, message: "膽號超出水限制。" };
     }
     if (filters.elementCounts.fire !== null && includeStats.fire > filters.elementCounts.fire) {
-      return { ok: false, message: "包含號碼超出火限制。" };
+      return { ok: false, message: "膽號超出火限制。" };
     }
     if (filters.elementCounts.earth !== null && includeStats.earth > filters.elementCounts.earth) {
-      return { ok: false, message: "包含號碼超出土限制。" };
+      return { ok: false, message: "膽號超出土限制。" };
     }
   }
   if (filters.oddCount !== null && filters.oddCount > stats.odd) {
@@ -1527,6 +1598,7 @@ function buildFilterKey(filters, pool) {
   const parts = [
     pool.join(","),
     [...state.included].sort((a, b) => a - b).join(","),
+    [...state.dragged].sort((a, b) => a - b).join(","),
     filters.sumMin ?? "",
     filters.sumMax ?? "",
     filters.oddCount ?? "",
@@ -1862,7 +1934,12 @@ function isValid(nums, filters) {
 function generateSets(poolOverride, filtersOverride) {
   buildExcluded();
   const filters = filtersOverride || readFilters();
-  const pool = poolOverride || getFilteredPool(filters);
+  const basePool = poolOverride || getFilteredPool(filters);
+  let pool = basePool;
+  if (state.historyMode === "include" && state.dragged.size) {
+    const dragPool = [...state.dragged].filter((n) => basePool.includes(n));
+    pool = [...new Set([...dragPool, ...state.included])];
+  }
   const feasibility = checkFeasibility(filters, pool);
   if (!feasibility.ok) {
     setGenerateStatus(`${feasibility.message}請減少排除條件。`);
@@ -1870,11 +1947,11 @@ function generateSets(poolOverride, filtersOverride) {
   }
   const included = [...state.included].sort((a, b) => a - b);
   if (included.length > 6) {
-    setGenerateStatus("包含號碼超過 6 個。");
+    setGenerateStatus("膽號超過 6 個。");
     return [];
   }
   if (included.some((n) => !pool.includes(n))) {
-    setGenerateStatus("包含號碼同排除或條件衝突。");
+    setGenerateStatus("膽號同排除或條件衝突。");
     return [];
   }
 
@@ -2117,7 +2194,12 @@ function autoUpdate() {
     updateSumRangeUI();
     updateAvailableCount();
     const filters = readFilters();
-    const pool = getFilteredPool(filters);
+    const filteredPool = getFilteredPool(filters);
+    let pool = filteredPool;
+    if (state.historyMode === "include" && state.dragged.size) {
+      const dragPool = [...state.dragged].filter((n) => filteredPool.includes(n));
+      pool = [...new Set([...dragPool, ...state.included])];
+    }
     const basePool = [];
     for (let i = 1; i <= 49; i += 1) {
       if (!state.excluded.has(i)) basePool.push(i);
@@ -2151,7 +2233,9 @@ if (els.numberBoard) {
     if (!ball || !ball.dataset.number) return;
     const num = Number(ball.dataset.number);
     if (!Number.isFinite(num)) return;
-    toggleIncludedNumber(num);
+    if (state.historyMode === "include") {
+      toggleDragNumber(num);
+    }
   });
 }
 
@@ -2175,6 +2259,27 @@ if (els.clearInclude) {
   });
 }
 
+if (els.clearDrag) {
+  els.clearDrag.addEventListener("click", () => {
+    state.dragged.clear();
+    renderDragList();
+    renderNumberBoard();
+    autoUpdate();
+  });
+}
+
+if (els.dragCount) {
+  els.dragCount.addEventListener("change", () => {
+    const limit = parseNumber(els.dragCount.value);
+    if (limit !== null && state.dragged.size > limit) {
+      state.dragged = new Set([...state.dragged].slice(0, limit));
+    }
+    renderDragList();
+    renderNumberBoard();
+    autoUpdate();
+  });
+}
+
 if (els.historyModeInputs && els.historyModeInputs.length) {
   els.historyModeInputs.forEach((input) => {
     input.addEventListener("change", () => {
@@ -2182,14 +2287,19 @@ if (els.historyModeInputs && els.historyModeInputs.length) {
       state.historyMode = selected ? selected.value : "exclude";
       if (state.historyMode === "exclude") {
         state.included.clear();
+        state.dragged.clear();
       }
       if (els.includeSection) {
         els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
       }
+      if (els.dragSection) {
+        els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
+      }
       if (els.historyLabel) {
-        els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選包含）" : "排除期數";
+        els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
       }
       renderIncludeList();
+      renderDragList();
       buildExcluded();
       autoUpdate();
     });
@@ -2212,10 +2322,14 @@ renderNumberBoard();
 if (els.includeSection) {
   els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
 }
+if (els.dragSection) {
+  els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
+}
 if (els.historyLabel) {
-  els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選包含）" : "排除期數";
+  els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
 }
 renderIncludeList();
+renderDragList();
 updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
