@@ -119,9 +119,13 @@ const state = {
   draws: [],
   excluded: new Set(),
   lastGenerated: null,
+  lastGeneratedKey: null,
   countToken: 0,
   latestInfo: null,
-  analysisDraws: []
+  analysisDraws: [],
+  lastComboKey: null,
+  lastComboCount: null,
+  lastExcludedKey: null
 };
 
 const COLOR_GROUPS = {
@@ -892,6 +896,113 @@ function getFilteredPool(filters) {
   return pool;
 }
 
+function getPoolStats(pool) {
+  const stats = {
+    odd: 0,
+    even: 0,
+    small: 0,
+    big: 0,
+    red: 0,
+    blue: 0,
+    green: 0,
+    metal: 0,
+    wood: 0,
+    water: 0,
+    fire: 0,
+    earth: 0,
+    rows: new Set()
+  };
+  pool.forEach((num) => {
+    stats.rows.add(getRowIndex(num));
+    if (num % 2 === 1) stats.odd += 1;
+    else stats.even += 1;
+    if (num <= 24) stats.small += 1;
+    else stats.big += 1;
+    const color = getColorClass(num);
+    if (color === "red") stats.red += 1;
+    else if (color === "blue") stats.blue += 1;
+    else stats.green += 1;
+    const element = getElementTag(num);
+    if (element === "金") stats.metal += 1;
+    else if (element === "木") stats.wood += 1;
+    else if (element === "水") stats.water += 1;
+    else if (element === "火") stats.fire += 1;
+    else stats.earth += 1;
+  });
+  return stats;
+}
+
+function checkFeasibility(filters, pool) {
+  if (pool.length < 6) {
+    return { ok: false, message: "可用號碼唔夠 6 個。" };
+  }
+  const stats = getPoolStats(pool);
+  if (filters.oddCount !== null && filters.oddCount > stats.odd) {
+    return { ok: false, message: "單數號碼唔夠用。" };
+  }
+  if (filters.evenCount !== null && filters.evenCount > stats.even) {
+    return { ok: false, message: "雙數號碼唔夠用。" };
+  }
+  if (filters.smallCount !== null && filters.smallCount > stats.small) {
+    return { ok: false, message: "細號碼唔夠用。" };
+  }
+  if (filters.bigCount !== null && filters.bigCount > stats.big) {
+    return { ok: false, message: "大號碼唔夠用。" };
+  }
+  if (filters.colorCounts.red !== null && filters.colorCounts.red > stats.red) {
+    return { ok: false, message: "紅色號碼唔夠用。" };
+  }
+  if (filters.colorCounts.blue !== null && filters.colorCounts.blue > stats.blue) {
+    return { ok: false, message: "藍色號碼唔夠用。" };
+  }
+  if (filters.colorCounts.green !== null && filters.colorCounts.green > stats.green) {
+    return { ok: false, message: "綠色號碼唔夠用。" };
+  }
+  if (filters.elementCounts.metal !== null && filters.elementCounts.metal > stats.metal) {
+    return { ok: false, message: "金屬號碼唔夠用。" };
+  }
+  if (filters.elementCounts.wood !== null && filters.elementCounts.wood > stats.wood) {
+    return { ok: false, message: "木屬號碼唔夠用。" };
+  }
+  if (filters.elementCounts.water !== null && filters.elementCounts.water > stats.water) {
+    return { ok: false, message: "水屬號碼唔夠用。" };
+  }
+  if (filters.elementCounts.fire !== null && filters.elementCounts.fire > stats.fire) {
+    return { ok: false, message: "火屬號碼唔夠用。" };
+  }
+  if (filters.elementCounts.earth !== null && filters.elementCounts.earth > stats.earth) {
+    return { ok: false, message: "土屬號碼唔夠用。" };
+  }
+  if (filters.minRows > 1 && stats.rows.size < filters.minRows) {
+    return { ok: false, message: "行數唔夠用。" };
+  }
+  return { ok: true };
+}
+
+function buildFilterKey(filters, pool) {
+  const parts = [
+    pool.join(","),
+    filters.sumMin ?? "",
+    filters.sumMax ?? "",
+    filters.oddCount ?? "",
+    filters.evenCount ?? "",
+    filters.smallCount ?? "",
+    filters.bigCount ?? "",
+    filters.maxConsecutive ?? "",
+    filters.maxTail ?? "",
+    filters.minRows ?? "",
+    filters.colorCounts.red ?? "",
+    filters.colorCounts.blue ?? "",
+    filters.colorCounts.green ?? "",
+    filters.elementCounts.metal ?? "",
+    filters.elementCounts.wood ?? "",
+    filters.elementCounts.water ?? "",
+    filters.elementCounts.fire ?? "",
+    filters.elementCounts.earth ?? ""
+  ];
+  return parts.join("|");
+}
+
 function popcount(mask) {
   let count = 0;
   let m = mask;
@@ -905,6 +1016,8 @@ function popcount(mask) {
 async function countCombinations(pool, filters, token) {
   const n = pool.length;
   if (n < 6) return 0;
+  const feasibility = checkFeasibility(filters, pool);
+  if (!feasibility.ok) return 0;
 
   const prefix = new Array(n + 1).fill(0);
   const suffixOdd = new Array(n + 1).fill(0);
@@ -1208,12 +1321,13 @@ function isValid(nums, filters) {
   return true;
 }
 
-function generateSets() {
+function generateSets(poolOverride, filtersOverride) {
   buildExcluded();
-  const filters = readFilters();
-  const pool = getFilteredPool(filters);
-  if (pool.length < 6) {
-    setGenerateStatus("可用號碼唔夠 6 個。請減少排除條件。");
+  const filters = filtersOverride || readFilters();
+  const pool = poolOverride || getFilteredPool(filters);
+  const feasibility = checkFeasibility(filters, pool);
+  if (!feasibility.ok) {
+    setGenerateStatus(`${feasibility.message}請減少排除條件。`);
     return [];
   }
 
@@ -1417,16 +1531,23 @@ function handleExcludeChange() {
 let autoTimer = null;
 let countTimer = null;
 
-function scheduleComboCount() {
+function scheduleComboCount(filters, pool, key) {
   clearTimeout(countTimer);
   countTimer = setTimeout(async () => {
     const token = state.countToken + 1;
     state.countToken = token;
+    const activeFilters = filters || readFilters();
+    const activePool = pool || getFilteredPool(activeFilters);
+    const comboKey = key || buildFilterKey(activeFilters, activePool);
+    if (comboKey === state.lastComboKey && state.lastComboCount !== null) {
+      setComboCount(`可組合：${state.lastComboCount.toLocaleString("en-US")}`);
+      return;
+    }
     setComboCount("可組合：計算中…");
-    const filters = readFilters();
-    const pool = getFilteredPool(filters);
-    const count = await countCombinations(pool, filters, token);
+    const count = await countCombinations(activePool, activeFilters, token);
     if (state.countToken !== token) return;
+    state.lastComboKey = comboKey;
+    state.lastComboCount = count;
     setComboCount(`可組合：${count.toLocaleString("en-US")}`);
   }, 200);
 }
@@ -1437,13 +1558,25 @@ function autoUpdate() {
     setGenerateStatus("計算中…");
     updateSumRangeUI();
     updateAvailableCount();
-    renderCategoryLists();
-    const sets = generateSets();
-    if (sets.length) {
-      renderResults(sets);
+    const filters = readFilters();
+    const pool = getFilteredPool(filters);
+    const key = buildFilterKey(filters, pool);
+    const excludedKey = [...state.excluded].sort((a, b) => a - b).join(",");
+    if (excludedKey !== state.lastExcludedKey) {
+      renderCategoryLists();
+      state.lastExcludedKey = excludedKey;
+    }
+    if (key !== state.lastGeneratedKey) {
+      const sets = generateSets(pool, filters);
+      if (sets.length) {
+        renderResults(sets);
+        setGenerateStatus("");
+      }
+      state.lastGeneratedKey = key;
+    } else {
       setGenerateStatus("");
     }
-    scheduleComboCount();
+    scheduleComboCount(filters, pool, key);
   }, 250);
 }
 
