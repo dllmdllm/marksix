@@ -785,8 +785,11 @@ function updateRepeatInfo() {
       const rate = rates[idx];
       if (!rate) {
         cell.textContent = "-";
+        cell.classList.remove("repeat-high");
       } else {
-        cell.textContent = `${(rate[key] * 100).toFixed(1)}%`;
+        const value = rate[key] * 100;
+        cell.textContent = `${value.toFixed(1)}%`;
+        cell.classList.toggle("repeat-high", value >= 80);
       }
     });
   });
