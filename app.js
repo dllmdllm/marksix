@@ -731,6 +731,7 @@ function computeRepeatRates(draws, maxN = 5) {
     let hit3 = 0;
     let hit4 = 0;
     let hit5 = 0;
+    let overlapSum = 0;
     for (let i = n; i < sorted.length; i += 1) {
       const current = new Set(sorted[i].numbers);
       const prevUnion = new Set();
@@ -741,6 +742,7 @@ function computeRepeatRates(draws, maxN = 5) {
       current.forEach((num) => {
         if (prevUnion.has(num)) overlap += 1;
       });
+      overlapSum += overlap;
       if (overlap >= 1) hit += 1;
       if (overlap >= 2) hit2 += 1;
       if (overlap >= 3) hit3 += 1;
@@ -753,7 +755,8 @@ function computeRepeatRates(draws, maxN = 5) {
       atLeast2: hit2 / total,
       atLeast3: hit3 / total,
       atLeast4: hit4 / total,
-      atLeast5: hit5 / total
+      atLeast5: hit5 / total,
+      avgOverlap: overlapSum / total
     });
   }
   return rates;
@@ -778,7 +781,7 @@ function updateRepeatInfo() {
     if (status) status.textContent = "歷史比例未有足夠資料。";
     return;
   }
-  const keys = ["atLeast1", "atLeast2", "atLeast3", "atLeast4", "atLeast5"];
+  const keys = ["atLeast1", "atLeast2", "atLeast3", "atLeast4", "atLeast5", "avgOverlap"];
   keys.forEach((key) => {
     const rowCells = els.repeatInfo.querySelectorAll(`.repeat-cell[data-repeat="${key}"]`);
     rowCells.forEach((cell, idx) => {
@@ -787,9 +790,14 @@ function updateRepeatInfo() {
         cell.textContent = "-";
         cell.classList.remove("repeat-high");
       } else {
-        const value = rate[key] * 100;
-        cell.textContent = `${value.toFixed(1)}%`;
-        cell.classList.toggle("repeat-high", value >= 80);
+        if (key === "avgOverlap") {
+          cell.textContent = rate.avgOverlap.toFixed(2);
+          cell.classList.remove("repeat-high");
+        } else {
+          const value = rate[key] * 100;
+          cell.textContent = `${value.toFixed(1)}%`;
+          cell.classList.toggle("repeat-high", value >= 80);
+        }
       }
     });
   });
