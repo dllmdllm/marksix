@@ -60,6 +60,7 @@ const NEXT_QUERY = `${DRAW_FRAGMENT}
 const els = {
   lastN: document.getElementById("lastN"),
   fetchStatus: document.getElementById("fetchStatus"),
+  repeatInfo: document.getElementById("repeatInfo"),
   numberBoard: document.getElementById("numberBoard"),
   comboCount: document.getElementById("comboCount"),
   excludedSummary: document.getElementById("excludedSummary"),
@@ -707,6 +708,57 @@ function renderCountChips(container, entries) {
   });
 }
 
+function computeRepeatRates(draws, maxN = 5) {
+  const sorted = draws
+    .filter((draw) => Array.isArray(draw.numbers) && draw.numbers.length === 6)
+    .filter((draw) => draw.drawDate)
+    .slice()
+    .sort((a, b) => {
+      const dtA = new Date(normalizeDateString(a.drawDate || "")).getTime() || 0;
+      const dtB = new Date(normalizeDateString(b.drawDate || "")).getTime() || 0;
+      return dtA - dtB;
+    });
+  const rates = [];
+  for (let n = 1; n <= maxN; n += 1) {
+    const total = sorted.length - n;
+    if (total <= 0) {
+      rates.push(null);
+      continue;
+    }
+    let hit = 0;
+    for (let i = n; i < sorted.length; i += 1) {
+      const current = new Set(sorted[i].numbers);
+      const prevUnion = new Set();
+      for (let j = i - n; j < i; j += 1) {
+        sorted[j].numbers.forEach((num) => prevUnion.add(num));
+      }
+      if ([...current].some((num) => prevUnion.has(num))) hit += 1;
+    }
+    rates.push(hit / total);
+  }
+  return rates;
+}
+
+function updateRepeatInfo() {
+  if (!els.repeatInfo) return;
+  if (!state.analysisDraws.length) {
+    els.repeatInfo.textContent = "連接本地資料後先會顯示歷史比例。";
+    return;
+  }
+  const rates = computeRepeatRates(state.analysisDraws, 5);
+  if (!rates.filter((value) => value !== null).length) {
+    els.repeatInfo.textContent = "歷史比例未有足夠資料。";
+    return;
+  }
+  const parts = rates
+    .map((rate, idx) => {
+      if (rate === null) return null;
+      return `${idx + 1}期 ${((rate || 0) * 100).toFixed(1)}%`;
+    })
+    .filter(Boolean);
+  els.repeatInfo.textContent = `歷史上，下一期至少 1 個號碼出現於過去 N 期：${parts.join("／")}`;
+}
+
 function updateAnalysisView() {
   if (!els.analysisCold || !els.analysisHot || !els.analysisCounts) return;
   if (!state.analysisDraws.length) {
@@ -775,12 +827,14 @@ async function fetchAnalysisData() {
     const data = await response.json();
     state.analysisDraws = Array.isArray(data.draws) ? data.draws : [];
     updateAnalysisView();
+    updateRepeatInfo();
   } catch (err) {
     state.analysisDraws = [];
     if (els.analysisStatus) {
       els.analysisStatus.textContent = "未連接本地資料";
     }
     updateAnalysisView();
+    updateRepeatInfo();
   }
 }
 
