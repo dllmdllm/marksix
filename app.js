@@ -117,7 +117,8 @@ const els = {
   repeatStatus: document.querySelector("#repeatInfo .repeat-status"),
   pickDan: document.getElementById("pickDan"),
   danList: document.getElementById("danList"),
-  danStatus: document.getElementById("danStatus")
+  danStatus: document.getElementById("danStatus"),
+  danReason: document.getElementById("danReason")
 };
 
 const state = {
@@ -843,11 +844,13 @@ function computeHotCounts(draws, windowSize) {
 
 function pickDanNumbers() {
   if (!els.danList || !els.danStatus) return;
+  if (els.danReason) els.danReason.textContent = "";
   const recent = getRecentAnalysisDraws(2);
   if (recent.length < 2) {
     els.danStatus.textContent = "最近 2 期資料不足。";
     els.danList.innerHTML = "";
     state.suggested = new Set();
+    if (els.danReason) els.danReason.textContent = "";
     renderNumberBoard();
     return;
   }
@@ -861,6 +864,7 @@ function pickDanNumbers() {
     els.danStatus.textContent = "候選號碼不足。";
     els.danList.innerHTML = "";
     state.suggested = new Set();
+    if (els.danReason) els.danReason.textContent = "";
     renderNumberBoard();
     return;
   }
@@ -875,14 +879,14 @@ function pickDanNumbers() {
   const sameColor = (a, b) => getColorClass(a) === getColorClass(b);
   const sameSize = (a, b) => (a <= 24) === (b <= 24);
 
-  const tryPairs = (listA, listB, rules) => {
+  const tryPairs = (listA, listB, rules, reason) => {
     for (const a of listA) {
       for (const b of listB) {
         if (a === b) continue;
         if (rules.noConsecutive && isConsecutive(a, b)) continue;
         if (rules.diffColor && sameColor(a, b)) continue;
         if (rules.diffSize && sameSize(a, b)) continue;
-        return [a, b].sort((x, y) => x - y);
+        return { pair: [a, b].sort((x, y) => x - y), reason };
       }
     }
     return null;
@@ -899,26 +903,46 @@ function pickDanNumbers() {
   ];
 
   let chosen = null;
+  let reason = "";
   for (const rules of rulesets) {
-    chosen = tryPairs(hot, cold, rules);
-    if (chosen) break;
+    const picked = tryPairs(hot, cold, rules, "熱 + 冷（過去 N 期）");
+    if (picked) {
+      chosen = picked.pair;
+      reason = picked.reason;
+      break;
+    }
   }
 
   if (!chosen) {
     const allNums = scored.map((item) => item.num);
     for (const rules of rulesets) {
-      chosen = tryPairs(allNums, allNums, rules);
-      if (chosen) break;
+      const picked = tryPairs(allNums, allNums, rules, "過去 2 期隨機配對");
+      if (picked) {
+        chosen = picked.pair;
+        reason = picked.reason;
+        break;
+      }
     }
   }
 
   if (!chosen) {
     chosen = candidates.slice(0, 2).sort((a, b) => a - b);
+    reason = "過去 2 期號碼（預設取前 2 個）";
   }
 
   state.suggested = new Set(chosen);
   renderBallList(els.danList, chosen);
   els.danStatus.textContent = "已根據過去 2 期建議 2 個膽。";
+  if (els.danReason) {
+    const detail = chosen
+      .map((num) => {
+        const tag = `${getColorClass(num)}｜${num <= 24 ? "細" : "大"}`;
+        return `${pad2(num)}（${tag}）`;
+      })
+      .join("、");
+    const consecutive = Math.abs(chosen[0] - chosen[1]) === 1 ? "有連號" : "無連號";
+    els.danReason.textContent = `原因：${reason}，${detail}，${consecutive}`;
+  }
   renderNumberBoard();
 }
 
