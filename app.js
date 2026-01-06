@@ -1787,10 +1787,12 @@ function updateOddEvenNotes() {
   let oddText = "";
   let evenText = "";
 
-  if (oddVal === 6) oddText = "全單數";
+  if (oddVal === null) oddText = "無限制";
+  else if (oddVal === 6) oddText = "全單數";
   else if (oddVal === 0) oddText = "全雙數";
 
-  if (evenVal === 6) evenText = "全雙數";
+  if (evenVal === null) evenText = "無限制";
+  else if (evenVal === 6) evenText = "全雙數";
   else if (evenVal === 0) evenText = "全單數";
 
   els.oddNote.textContent = oddText ? `(${oddText})` : "";
