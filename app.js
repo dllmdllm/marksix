@@ -104,6 +104,7 @@ const els = {
   smallCount: document.getElementById("smallCount"),
   bigCount: document.getElementById("bigCount"),
   maxConsecutive: document.getElementById("maxConsecutive"),
+  consecutiveList: document.getElementById("consecutiveList"),
   maxTail: document.getElementById("maxTail"),
   generateBtn: document.getElementById("generateBtn"),
   ticketCount: document.getElementById("ticketCount"),
@@ -703,6 +704,8 @@ function renderCategoryLists() {
   renderBallList(els.row3List, basePool.filter((n) => n >= 21 && n <= 30));
   renderBallList(els.row4List, basePool.filter((n) => n >= 31 && n <= 40));
   renderBallList(els.row5List, basePool.filter((n) => n >= 41 && n <= 49));
+
+  updateConsecutiveList(basePool);
 }
 
 function renderEmptyMessage(container, message) {
@@ -1062,6 +1065,45 @@ function formatSummaryLine(nums) {
     sumText: `總和 ${sum}，平均數 ${avg}`,
     detailText: parts.join("／")
   };
+}
+
+function buildConsecutiveSequence(pool, length) {
+  const set = new Set(pool);
+  const sequences = [];
+  for (let start = 1; start <= 49 - length + 1; start += 1) {
+    let ok = true;
+    for (let offset = 0; offset < length; offset += 1) {
+      if (!set.has(start + offset)) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      sequences.push(start);
+    }
+  }
+  return sequences;
+}
+
+function updateConsecutiveList(pool) {
+  if (!els.consecutiveList) return;
+  const length = parseNumber(els.maxConsecutive?.value);
+  if (!length) {
+    els.consecutiveList.innerHTML = "";
+    return;
+  }
+  const starts = buildConsecutiveSequence(pool, length);
+  if (!starts.length) {
+    renderEmptyMessage(els.consecutiveList, "未有連號組合");
+    return;
+  }
+  const balls = [];
+  starts.forEach((start) => {
+    for (let offset = 0; offset < length; offset += 1) {
+      balls.push(start + offset);
+    }
+  });
+  renderBallList(els.consecutiveList, balls);
 }
 
 function updateAnalysisView() {
@@ -1933,6 +1975,11 @@ function autoUpdate() {
     updateAvailableCount();
     const filters = readFilters();
     const pool = getFilteredPool(filters);
+    const basePool = [];
+    for (let i = 1; i <= 49; i += 1) {
+      if (!state.excluded.has(i)) basePool.push(i);
+    }
+    updateConsecutiveList(basePool);
     const key = buildFilterKey(filters, pool);
     const excludedKey = [...state.excluded].sort((a, b) => a - b).join(",");
     if (excludedKey !== state.lastExcludedKey) {
