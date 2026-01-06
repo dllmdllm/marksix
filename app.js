@@ -329,14 +329,7 @@ function renderExcludedSummary() {
     return;
   }
   state.draws.forEach((draw) => {
-    const line = document.createElement("div");
-    line.className = "excluded-line";
     const dateText = draw.drawDate?.split("+")[0] || "";
-    const metaWrap = document.createElement("div");
-    metaWrap.className = "excluded-meta";
-    const meta = document.createElement("div");
-    meta.textContent = `${dateText} 第${draw.year}/${draw.no}期`;
-
     const numsWrap = document.createElement("div");
     numsWrap.className = "excluded-numbers";
     const drawnNums = draw.drawResult?.drawnNo || [];
@@ -363,19 +356,23 @@ function renderExcludedSummary() {
     }
 
     const { sumText, detailText } = formatSummaryLine(allNums);
+    const card = document.createElement("div");
+    card.className = "result-card excluded-card";
+    const metaLine = document.createElement("div");
+    metaLine.className = "excluded-meta-line";
+    metaLine.textContent = `${dateText} 第${draw.year}/${draw.no}期`;
     const stats = document.createElement("div");
-    stats.className = "excluded-stats";
+    stats.className = "result-stats";
     stats.textContent = sumText;
     const detail = document.createElement("div");
-    detail.className = "excluded-detail";
+    detail.className = "result-detail";
     detail.textContent = detailText;
 
-    metaWrap.appendChild(meta);
-    metaWrap.appendChild(stats);
-    metaWrap.appendChild(detail);
-    line.appendChild(metaWrap);
-    line.appendChild(numsWrap);
-    els.excludedSummary.appendChild(line);
+    card.appendChild(metaLine);
+    card.appendChild(numsWrap);
+    card.appendChild(stats);
+    card.appendChild(detail);
+    els.excludedSummary.appendChild(card);
   });
 }
 

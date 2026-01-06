@@ -421,26 +421,17 @@ body {
   gap: 10px;
 }
 
-.excluded-line {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 10px;
-  align-items: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.excluded-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .excluded-numbers {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+}
+
+.excluded-meta-line {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .excluded-stats,
@@ -807,15 +798,6 @@ body {
 
   .hero h1 {
     font-size: 1.85rem;
-  }
-
-  .excluded-line {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .excluded-meta {
-    width: 100%;
   }
 
   .ball {
