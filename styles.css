@@ -599,6 +599,10 @@ body {
   flex-wrap: nowrap;
 }
 
+.row-check {
+  margin-left: auto;
+}
+
 .count-line-head .mini-label {
   min-width: 52px;
 }
