@@ -726,15 +726,34 @@ function computeRepeatRates(draws, maxN = 5) {
       continue;
     }
     let hit = 0;
+    let hit2 = 0;
+    let hit3 = 0;
+    let hit4 = 0;
+    let hit5 = 0;
     for (let i = n; i < sorted.length; i += 1) {
       const current = new Set(sorted[i].numbers);
       const prevUnion = new Set();
       for (let j = i - n; j < i; j += 1) {
         sorted[j].numbers.forEach((num) => prevUnion.add(num));
       }
-      if ([...current].some((num) => prevUnion.has(num))) hit += 1;
+      let overlap = 0;
+      current.forEach((num) => {
+        if (prevUnion.has(num)) overlap += 1;
+      });
+      if (overlap >= 1) hit += 1;
+      if (overlap >= 2) hit2 += 1;
+      if (overlap >= 3) hit3 += 1;
+      if (overlap >= 4) hit4 += 1;
+      if (overlap >= 5) hit5 += 1;
     }
-    rates.push(hit / total);
+    rates.push({
+      total,
+      atLeast1: hit / total,
+      atLeast2: hit2 / total,
+      atLeast3: hit3 / total,
+      atLeast4: hit4 / total,
+      atLeast5: hit5 / total
+    });
   }
   return rates;
 }
@@ -750,13 +769,23 @@ function updateRepeatInfo() {
     els.repeatInfo.textContent = "歷史比例未有足夠資料。";
     return;
   }
-  const parts = rates
-    .map((rate, idx) => {
-      if (rate === null) return null;
-      return `${idx + 1}期 ${((rate || 0) * 100).toFixed(1)}%`;
-    })
-    .filter(Boolean);
-  els.repeatInfo.textContent = `歷史上，下一期至少 1 個號碼出現於過去 N 期：${parts.join("／")}`;
+  const formatRow = (label, key) =>
+    rates
+      .map((rate, idx) => {
+        if (rate === null) return null;
+        return `${idx + 1}期 ${(rate[key] * 100).toFixed(1)}%`;
+      })
+      .filter(Boolean)
+      .join("／");
+
+  const lines = [
+    `歷史上，下一期至少 1 個號碼出現於過去 N 期：${formatRow("至少1個", "atLeast1")}`,
+    `至少 2 個：${formatRow("至少2個", "atLeast2")}`,
+    `至少 3 個：${formatRow("至少3個", "atLeast3")}`,
+    `至少 4 個：${formatRow("至少4個", "atLeast4")}`,
+    `至少 5 個：${formatRow("至少5個", "atLeast5")}`
+  ];
+  els.repeatInfo.innerHTML = lines.join("<br>");
 }
 
 function updateAnalysisView() {
