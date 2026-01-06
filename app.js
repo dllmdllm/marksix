@@ -126,6 +126,7 @@ const els = {
   danList: document.getElementById("danList"),
   danStatus: document.getElementById("danStatus"),
   danReason: document.getElementById("danReason"),
+  danPreview: document.getElementById("danPreview"),
   includeList: document.getElementById("includeList"),
   includeStatus: document.getElementById("includeStatus"),
   clearInclude: document.getElementById("clearInclude"),
@@ -990,9 +991,10 @@ function computeHotCounts(draws, windowSize) {
 function pickDanNumbers() {
   if (!els.danList || !els.danStatus) return;
   if (els.danReason) els.danReason.textContent = "";
-  const recent = getRecentAnalysisDraws(2);
+  const historyCount = Math.max(parseNumber(els.lastN?.value) || 0, 0);
+  const recent = getRecentAnalysisDraws(Math.max(historyCount, 2));
   if (recent.length < 2) {
-    els.danStatus.textContent = "最近 2 期資料不足。";
+    els.danStatus.textContent = "歷史組合期數資料不足。";
     els.danList.innerHTML = "";
     state.suggested = new Set();
     if (els.danReason) els.danReason.textContent = "";
@@ -1003,6 +1005,7 @@ function pickDanNumbers() {
   const pool = new Set();
   recent.forEach((draw) => {
     draw.numbers.forEach((num) => pool.add(num));
+    if (draw.special) pool.add(draw.special);
   });
   const candidates = [...pool];
   if (candidates.length < 2) {
@@ -1077,7 +1080,7 @@ function pickDanNumbers() {
 
   state.suggested = new Set(chosen);
   renderBallList(els.danList, chosen);
-  els.danStatus.textContent = "已根據過去 2 期建議 2 個膽。";
+  els.danStatus.textContent = "已根據歷史組合期數建議 2 個膽。";
   if (state.historyMode === "include") {
     state.included = new Set(chosen);
     state.dragged = new Set([...state.dragged].filter((n) => !state.included.has(n)));
@@ -1316,6 +1319,9 @@ async function fetchAnalysisData() {
     updateRepeatInfo();
     if (els.danStatus) {
       els.danStatus.textContent = "可點選自動揀膽。";
+    }
+    if (els.danList && !els.danList.children.length) {
+      els.danList.innerHTML = "";
     }
   } catch (err) {
     state.analysisDraws = [];
@@ -2289,15 +2295,18 @@ if (els.historyModeInputs && els.historyModeInputs.length) {
         state.included.clear();
         state.dragged.clear();
       }
-      if (els.includeSection) {
-        els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
-      }
-      if (els.dragSection) {
-        els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
-      }
-      if (els.historyLabel) {
-        els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
-      }
+  if (els.includeSection) {
+    els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
+  }
+  if (els.dragSection) {
+    els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
+  }
+  if (els.danPreview) {
+    els.danPreview.style.display = state.historyMode === "include" ? "" : "none";
+  }
+  if (els.historyLabel) {
+    els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
+  }
       renderIncludeList();
       renderDragList();
       buildExcluded();
@@ -2319,15 +2328,18 @@ if (els.historyModeInputs && els.historyModeInputs.length) {
 });
 
 renderNumberBoard();
-if (els.includeSection) {
-  els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
-}
-if (els.dragSection) {
-  els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
-}
-if (els.historyLabel) {
-  els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
-}
+      if (els.includeSection) {
+        els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
+      }
+      if (els.dragSection) {
+        els.dragSection.style.display = state.historyMode === "include" ? "" : "none";
+      }
+      if (els.danPreview) {
+        els.danPreview.style.display = state.historyMode === "include" ? "" : "none";
+      }
+      if (els.historyLabel) {
+        els.historyLabel.textContent = state.historyMode === "include" ? "歷史組合（可選膽號）" : "排除期數";
+      }
 renderIncludeList();
 renderDragList();
 updateCountConstraints();

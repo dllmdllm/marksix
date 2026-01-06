@@ -136,10 +136,13 @@
           <label>膽號（來自歷史組合）</label>
           <div class="inline">
             <button id="clearInclude" class="ghost-btn">清除膽號</button>
+            <button id="pickDan" class="ghost-btn">自動揀 2 個膽</button>
           </div>
-          <p class="hint">由歷史組合點選，最多 6 個。</p>
+          <p class="hint">由歷史組合點選，最多 6 個（期數跟「歷史組合幾多期」）。</p>
           <div id="includeList" class="ball-list"></div>
           <p id="includeStatus" class="hint">未選擇膽號。</p>
+          <p id="danStatus" class="hint">連接本地資料後先會有建議。</p>
+          <p id="danReason" class="hint"></p>
         </div>
 
         <div class="field line" id="dragSection">
@@ -165,15 +168,10 @@
           <p id="dragStatus" class="hint">未選擇拖碼。</p>
         </div>
 
-        <div class="field line">
-          <label>膽號建議（過去 2 期）</label>
-          <div class="inline">
-            <button id="pickDan" class="ghost-btn">自動揀 2 個膽</button>
-          </div>
-          <p class="hint">規則：熱 + 冷／避連號／分色／分大小</p>
+        <div class="field line" id="danPreview">
+          <label>膽號建議預覽</label>
           <div id="danList" class="ball-list"></div>
-          <p id="danStatus" class="hint">連接本地資料後先會有建議。</p>
-          <p id="danReason" class="hint"></p>
+          <p class="hint">規則：熱 + 冷／避連號／分色／分大小</p>
         </div>
       </section>
 
