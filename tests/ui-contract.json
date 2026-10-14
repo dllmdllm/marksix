@@ -1,0 +1,621 @@
+{
+  "baseCommit": "c7f19816ed354ddbeeb68484f3d81b5b9323bff2",
+  "appBlob": "5c1bdf7f620a684482782c914377d8aa505ad31f",
+  "ids": [
+    "heroJackpot",
+    "numberBoard",
+    "boardHint",
+    "repeatInfo",
+    "lastN",
+    "fetchStatus",
+    "historyLabel",
+    "excludedSummary",
+    "includeSection",
+    "clearInclude",
+    "pickDan",
+    "includeList",
+    "includeStatus",
+    "danStatus",
+    "danReason",
+    "dragSection",
+    "dragCount",
+    "clearDrag",
+    "dragList",
+    "dragStatus",
+    "danPreview",
+    "danList",
+    "analysisN",
+    "analysisStatus",
+    "analysisMeta",
+    "syncAll",
+    "syncLatest",
+    "syncStatus",
+    "syncProgress",
+    "syncProgressText",
+    "analysisCold",
+    "analysisHot",
+    "analysisCounts",
+    "availableCount",
+    "oddCount",
+    "oddNote",
+    "oddList",
+    "evenCount",
+    "evenNote",
+    "evenList",
+    "smallCount",
+    "smallList",
+    "bigCount",
+    "bigList",
+    "redCount",
+    "redList",
+    "blueCount",
+    "blueList",
+    "greenCount",
+    "greenList",
+    "metalCount",
+    "metalList",
+    "woodCount",
+    "woodList",
+    "waterCount",
+    "waterList",
+    "fireCount",
+    "fireList",
+    "earthCount",
+    "earthList",
+    "rowLimit",
+    "row1List",
+    "row2List",
+    "row3List",
+    "row4List",
+    "row5List",
+    "maxConsecutive",
+    "consecutiveList",
+    "maxTail",
+    "sumRange",
+    "sumMin",
+    "sumMax",
+    "sumMinLabel",
+    "sumMaxLabel",
+    "activeConditions",
+    "constraintStatus",
+    "generateBtn",
+    "ticketCount",
+    "generateStatus",
+    "comboCount",
+    "generationSummary",
+    "resultList"
+  ],
+  "controls": {
+    "lastN": {
+      "id": "lastN",
+      "options": [
+        {
+          "value": "0",
+          "selected": null
+        },
+        {
+          "value": "1"
+        },
+        {
+          "value": "2"
+        },
+        {
+          "value": "3"
+        },
+        {
+          "value": "4"
+        },
+        {
+          "value": "5"
+        }
+      ]
+    },
+    "historyMode:exclude": {
+      "type": "radio",
+      "name": "historyMode",
+      "value": "exclude",
+      "checked": null
+    },
+    "historyMode:include": {
+      "type": "radio",
+      "name": "historyMode",
+      "value": "include"
+    },
+    "dragCount": {
+      "id": "dragCount",
+      "options": [
+        {
+          "value": "",
+          "selected": null
+        },
+        {
+          "value": "1"
+        },
+        {
+          "value": "2"
+        },
+        {
+          "value": "3"
+        },
+        {
+          "value": "4"
+        },
+        {
+          "value": "5"
+        },
+        {
+          "value": "6"
+        },
+        {
+          "value": "7"
+        },
+        {
+          "value": "8"
+        },
+        {
+          "value": "9"
+        },
+        {
+          "value": "10"
+        }
+      ]
+    },
+    "analysisN": {
+      "id": "analysisN",
+      "options": [
+        {
+          "value": "10"
+        },
+        {
+          "value": "20",
+          "selected": null
+        },
+        {
+          "value": "30"
+        },
+        {
+          "value": "50"
+        },
+        {
+          "value": "100"
+        }
+      ]
+    },
+    "oddCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "oddCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "oddCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "oddCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "oddCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "oddCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "oddCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "evenCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "evenCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "evenCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "evenCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "evenCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "evenCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "evenCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "smallCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "smallCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "smallCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "smallCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "smallCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "smallCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "smallCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "bigCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "bigCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "bigCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "bigCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "bigCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "bigCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "bigCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "redCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "redCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "redCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "redCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "redCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "redCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "redCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "blueCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "blueCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "blueCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "blueCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "blueCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "blueCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "blueCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "greenCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "greenCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "greenCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "greenCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "greenCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "greenCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "greenCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "metalCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "metalCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "metalCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "metalCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "metalCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "metalCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "metalCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "woodCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "woodCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "woodCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "woodCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "woodCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "woodCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "woodCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "waterCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "waterCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "waterCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "waterCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "waterCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "waterCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "waterCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "fireCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "fireCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "fireCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "fireCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "fireCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "fireCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "fireCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "earthCount:0": {
+      "type": "checkbox",
+      "data-count": "0"
+    },
+    "earthCount:1": {
+      "type": "checkbox",
+      "data-count": "1"
+    },
+    "earthCount:2": {
+      "type": "checkbox",
+      "data-count": "2"
+    },
+    "earthCount:3": {
+      "type": "checkbox",
+      "data-count": "3"
+    },
+    "earthCount:4": {
+      "type": "checkbox",
+      "data-count": "4"
+    },
+    "earthCount:5": {
+      "type": "checkbox",
+      "data-count": "5"
+    },
+    "earthCount:6": {
+      "type": "checkbox",
+      "data-count": "6"
+    },
+    "rowLimit:1": {
+      "type": "checkbox",
+      "data-row": "1"
+    },
+    "rowLimit:2": {
+      "type": "checkbox",
+      "data-row": "2"
+    },
+    "rowLimit:3": {
+      "type": "checkbox",
+      "data-row": "3"
+    },
+    "rowLimit:4": {
+      "type": "checkbox",
+      "data-row": "4"
+    },
+    "rowLimit:5": {
+      "type": "checkbox",
+      "data-row": "5"
+    },
+    "maxConsecutive": {
+      "id": "maxConsecutive",
+      "options": [
+        {
+          "value": "",
+          "selected": null
+        },
+        {
+          "value": "2"
+        },
+        {
+          "value": "3"
+        },
+        {
+          "value": "4"
+        },
+        {
+          "value": "5"
+        }
+      ]
+    },
+    "maxTail": {
+      "id": "maxTail",
+      "options": [
+        {
+          "value": "",
+          "selected": null
+        },
+        {
+          "value": "1"
+        },
+        {
+          "value": "2"
+        },
+        {
+          "value": "3"
+        },
+        {
+          "value": "4"
+        }
+      ]
+    },
+    "sumMin": {
+      "id": "sumMin",
+      "type": "range",
+      "min": "21",
+      "max": "279",
+      "value": "90"
+    },
+    "sumMax": {
+      "id": "sumMax",
+      "type": "range",
+      "min": "21",
+      "max": "279",
+      "value": "210"
+    },
+    "ticketCount": {
+      "id": "ticketCount",
+      "options": [
+        {
+          "value": "10",
+          "selected": null
+        },
+        {
+          "value": "20"
+        },
+        {
+          "value": "30"
+        },
+        {
+          "value": "40"
+        },
+        {
+          "value": "50"
+        },
+        {
+          "value": "100"
+        }
+      ]
+    }
+  }
+}

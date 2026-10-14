@@ -9,7 +9,7 @@ No package installation is required. Serve this directory over HTTP using an ins
 Run the offline regression suites:
 
 ```sh
-node --test tests/app.test.cjs
+node --test tests/*.test.cjs
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
@@ -52,3 +52,7 @@ For the optional local API: `python3 tools/marksix_data.py serve --output /path/
 - Large-space generation can stop early on rare valid combinations; the message distinguishes sampling exhaustion from mathematical impossibility. Exact counting may be slow for broad filters on mobile. The result summary distinguishes requested, produced unique, and exactly counted available combinations.
 - Big/small and odd/even are complementary exact targets. Editing either side updates the opposite side; clearing either clears the pair. Contradictory category totals, banker conflicts and safe category-based sum bounds are checked before generation. Only full enumeration/counting or a proven constraint conflict is described as no solution.
 - The active-condition summary includes history exclusion, all bankers, drag-pool selection/target, exact category counts (including inferred values), sum, consecutive, tail and number-range restrictions. “手選膽拖” preserves the former include-mode behavior; it does not automatically require historical overlap. With no selected drags, remaining numbers use all eligible non-banker numbers.
+
+## Workspace navigation
+
+Choose numbers, filters and results are separate retained views; history has its own view. Switching tabs preserves selections and expanded controls. Advanced filters and reference lists are disclosed on demand. The mobile action mirrors the current count and delegates to the existing generator; measured bottom spacing reserves its height. Keyboard navigation and state transitions have synthetic DOM coverage. Physical-device visual QA remains pending.
