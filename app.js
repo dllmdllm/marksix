@@ -63,6 +63,7 @@ const els = {
   fetchStatus: document.getElementById("fetchStatus"),
   repeatInfo: document.getElementById("repeatInfo"),
   numberBoard: document.getElementById("numberBoard"),
+  boardHint: document.getElementById("boardHint"),
   comboCount: document.getElementById("comboCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
@@ -109,10 +110,14 @@ const els = {
   generateBtn: document.getElementById("generateBtn"),
   ticketCount: document.getElementById("ticketCount"),
   generateStatus: document.getElementById("generateStatus"),
+  activeConditions: document.getElementById("activeConditions"),
+  constraintStatus: document.getElementById("constraintStatus"),
+  generationSummary: document.getElementById("generationSummary"),
   resultList: document.getElementById("resultList"),
   availableCount: document.getElementById("availableCount"),
   analysisN: document.getElementById("analysisN"),
   analysisStatus: document.getElementById("analysisStatus"),
+  analysisMeta: document.getElementById("analysisMeta"),
   analysisCold: document.getElementById("analysisCold"),
   analysisHot: document.getElementById("analysisHot"),
   analysisCounts: document.getElementById("analysisCounts"),
@@ -145,9 +150,13 @@ const state = {
   excluded: new Set(),
   lastGenerated: null,
   lastGeneratedKey: null,
+  generationReport: null,
   countToken: 0,
   latestInfo: null,
   analysisDraws: [],
+  analysisSource: null,
+  analysisMetadata: null,
+  historyRequestToken: 0,
   lastComboKey: null,
   lastComboCount: null,
   lastExcludedKey: null,
@@ -469,6 +478,7 @@ async function requestDraws(variables) {
       operationName: "marksixResult"
     })
   });
+  if (!res.ok) throw new Error(`資料請求失敗 (${res.status})`);
   const data = await res.json();
   if (data.errors) {
     throw new Error(data.errors.map((e) => e.message).join(" | "));
@@ -586,27 +596,63 @@ function scheduleAutoSync() {
   }, intervalMs);
 }
 
-async function fetchDraws(n) {
-  setFetchStatus("更新中…");
-  try {
-    if (n === 0) {
-      state.draws = [];
-      renderDraws();
-      buildExcluded();
-      setFetchStatus("已更新：0 期");
-      autoUpdate();
-      fetchLatestInfo();
-      return;
+function normalizeHistoryDraw(draw) {
+  return {
+    ...draw,
+    year: Number(draw.year),
+    no: Number(draw.no),
+    drawResult: {
+      ...draw.drawResult,
+      drawnNo: Array.isArray(draw.drawResult?.drawnNo) ? draw.drawResult.drawnNo.map(Number) : [],
+      xDrawnNo: Number(draw.drawResult?.xDrawnNo)
     }
-    state.draws = await requestDraws({ lastNDraw: n, drawType: "All" });
+  };
+}
+
+function getVisibleHistoryDraws(count) {
+  return state.draws
+    .map(normalizeHistoryDraw)
+    .map((draw) => ({ ...draw, numbers: draw.drawResult.drawnNo, special: draw.drawResult.xDrawnNo }))
+    .filter(isValidAnalysisDraw)
+    .sort((a, b) => new Date(normalizeDateString(b.drawDate)) - new Date(normalizeDateString(a.drawDate)))
+    .slice(0, count);
+}
+
+async function fetchDraws(n) {
+  const token = ++state.historyRequestToken;
+  setFetchStatus("更新中…");
+  if (els.pickDan) els.pickDan.disabled = true;
+  state.draws = [];
+  state.included.clear();
+  state.suggested.clear();
+  if (els.danList) els.danList.innerHTML = "";
+  if (els.danStatus) els.danStatus.textContent = "請先載入所選歷史期數。";
+  renderIncludeList();
+  buildExcluded();
+  autoUpdate();
+  try {
+    if (n > 0) {
+      const draws = await requestDraws({ lastNDraw: n, drawType: "All" });
+      if (token !== state.historyRequestToken) return;
+      state.draws = filterResultDraws(draws).map(normalizeHistoryDraw).filter((draw) => isValidAnalysisDraw({
+        ...draw,
+        numbers: (draw.drawResult?.drawnNo || []).map(Number),
+        special: Number(draw.drawResult?.xDrawnNo)
+      })).sort((a, b) => new Date(normalizeDateString(b.drawDate)) - new Date(normalizeDateString(a.drawDate))).slice(0, n);
+    }
     renderDraws();
     buildExcluded();
-    setFetchStatus(`已更新：${state.draws.length} 期`);
+    setFetchStatus(`已更新：${state.draws.length} 期${state.draws.length < n ? "（資料不足）" : ""}`);
     autoUpdate();
     fetchLatestInfo();
   } catch (err) {
+    if (token !== state.historyRequestToken) return;
     const msg = err instanceof Error ? err.message : String(err);
-    setFetchStatus(`${msg} ➜ ✨ 拉取失敗，請稍後再試或手動刷新。`);
+    setFetchStatus(`${msg} ➜ 拉取失敗，歷史條件已清除；請稍後再試。`);
+  } finally {
+    if (token === state.historyRequestToken && els.pickDan) {
+      els.pickDan.disabled = n === 0 || state.draws.length < n;
+    }
   }
 }
 
@@ -675,6 +721,9 @@ function renderBallList(container, nums) {
 }
 
 function renderNumberBoard() {
+  if (els.boardHint) els.boardHint.textContent = state.historyMode === "include"
+    ? "手選膽拖模式：點號碼盤選／移除拖碼；膽號由歷史組合點選。全部膽每組必出。"
+    : "排除歷史號碼模式：灰色係已排除號碼；號碼盤只供查看。";
   if (!els.numberBoard) return;
   if (!els.numberBoard.children.length) {
     for (let i = 1; i <= 49; i += 1) {
@@ -754,7 +803,7 @@ function renderIncludeList() {
     return;
   }
   renderBallList(els.includeList, nums);
-  els.includeStatus.textContent = `已選 ${nums.length} 個膽號。`;
+  els.includeStatus.textContent = `已選 ${nums.length} 個膽號，每組全部必出。`;
 }
 
 function toggleIncludedNumber(num) {
@@ -794,7 +843,7 @@ function renderDragList() {
     return;
   }
   renderBallList(els.dragList, nums);
-  els.dragStatus.textContent = `已選 ${nums.length} 個拖碼。`;
+  els.dragStatus.textContent = `已選 ${nums.length} 個拖碼候選，每組從可用拖碼選 ${6 - state.included.size} 個。`;
 }
 
 function toggleDragNumber(num) {
@@ -917,7 +966,7 @@ function updateRepeatInfo() {
     cells.forEach((cell) => {
       cell.textContent = "-";
     });
-    if (status) status.textContent = "連接本地資料後先會顯示歷史比例。";
+    if (status) status.textContent = "載入歷史資料後先會顯示歷史比例。";
     return;
   }
   const rates = computeRepeatRates(state.analysisDraws, 5);
@@ -957,7 +1006,7 @@ function updateRepeatInfo() {
       }
     });
   });
-  if (status) status.textContent = "已載入本地歷史數據";
+  if (status) status.textContent = `已載入${state.analysisSource === "local" ? "本地 CSV" : "隨附快照"}；歷史比例只描述過往，唔代表下一期機會。`;
 }
 
 function getRecentAnalysisDraws(count) {
@@ -992,9 +1041,9 @@ function pickDanNumbers() {
   if (!els.danList || !els.danStatus) return;
   if (els.danReason) els.danReason.textContent = "";
   const historyCount = Math.max(parseNumber(els.lastN?.value) || 0, 0);
-  const recent = getRecentAnalysisDraws(Math.max(historyCount, 2));
-  if (recent.length < 2) {
-    els.danStatus.textContent = "歷史組合期數資料不足。";
+  const recent = getVisibleHistoryDraws(historyCount);
+  if (!historyCount || recent.length < historyCount) {
+    els.danStatus.textContent = historyCount ? "所選歷史期數未載入完整，請先更新歷史組合。" : "請先選擇至少 1 期歷史組合。";
     els.danList.innerHTML = "";
     state.suggested = new Set();
     if (els.danReason) els.danReason.textContent = "";
@@ -1064,7 +1113,7 @@ function pickDanNumbers() {
   if (!chosen) {
     const allNums = scored.map((item) => item.num);
     for (const rules of rulesets) {
-      const picked = tryPairs(allNums, allNums, rules, "過去 2 期隨機配對");
+      const picked = tryPairs(allNums, allNums, rules, "所選歷史期數配對");
       if (picked) {
         chosen = picked.pair;
         reason = picked.reason;
@@ -1075,12 +1124,12 @@ function pickDanNumbers() {
 
   if (!chosen) {
     chosen = candidates.slice(0, 2).sort((a, b) => a - b);
-    reason = "過去 2 期號碼（預設取前 2 個）";
+    reason = "所選歷史號碼（預設取前 2 個）";
   }
 
   state.suggested = new Set(chosen);
   renderBallList(els.danList, chosen);
-  els.danStatus.textContent = "已根據歷史組合期數建議 2 個膽。";
+  els.danStatus.textContent = `已根據畫面上最近 ${historyCount} 期建議 2 個膽。`;
   if (state.historyMode === "include") {
     state.included = new Set(chosen);
     state.dragged = new Set([...state.dragged].filter((n) => !state.included.has(n)));
@@ -1098,6 +1147,7 @@ function pickDanNumbers() {
     els.danReason.textContent = `原因：${reason}，${detail}，${consecutive}`;
   }
   renderNumberBoard();
+  autoUpdate();
 }
 
 function computeColdHotSets() {
@@ -1296,43 +1346,93 @@ function updateAnalysisView() {
   }
 }
 
+function isValidAnalysisDraw(draw) {
+  if (!draw || !Number.isInteger(draw.year) || draw.year <= 0 || !Number.isInteger(draw.no) || draw.no <= 0 || draw.status !== "Result" || !Array.isArray(draw.numbers) || draw.numbers.length !== 6) return false;
+  const numbers = [...draw.numbers, draw.special];
+  return numbers.every((n) => Number.isInteger(n) && n >= 1 && n <= 49)
+    && new Set(numbers).size === 7
+    && typeof draw.drawDate === "string"
+    && /^\d{4}-\d{2}-\d{2}/.test(draw.drawDate)
+    && Number.isFinite(new Date(normalizeDateString(draw.drawDate)).getTime())
+    && Number.isFinite(new Date(`${draw.drawDate.slice(0, 10)}T00:00:00Z`).getTime())
+    && new Date(`${draw.drawDate.slice(0, 10)}T00:00:00Z`).toISOString().slice(0, 10) === draw.drawDate.slice(0, 10);
+}
+
+function readAnalysisPayload(data) {
+  if (!Array.isArray(data?.draws) || !data.draws.length || !data.draws.every(isValidAnalysisDraw)) {
+    throw new Error("歷史資料為空或格式不正確");
+  }
+  const keys = data.draws.map((draw) => `${draw.year}/${draw.no}`);
+  const dates = data.draws.map((draw) => draw.drawDate.slice(0, 10));
+  if (new Set(keys).size !== keys.length || new Set(dates).size !== dates.length) {
+    throw new Error("歷史資料有重複期數或日期");
+  }
+  return data.draws;
+}
+
+function renderAnalysisMetadata(now = new Date()) {
+  if (!els.analysisMeta) return;
+  if (!state.analysisDraws.length) {
+    els.analysisMeta.textContent = "未能載入本地 CSV 或隨附快照，暫無歷史分析。";
+    return;
+  }
+  const latest = [...state.analysisDraws].sort((a, b) =>
+    new Date(normalizeDateString(b.drawDate)) - new Date(normalizeDateString(a.drawDate)))[0];
+  const cutoff = latest.drawDate.slice(0, 10);
+  const age = Math.floor((now - new Date(normalizeDateString(latest.drawDate))) / 86400000);
+  const source = state.analysisSource === "local" ? "本地 CSV" : "隨附歷史快照";
+  // Request/serving time and CSV modification time are not acquisition timestamps.
+  const fetchedAt = state.analysisMetadata?.fetchedAt;
+  const acquisition = fetchedAt && Number.isFinite(new Date(fetchedAt).getTime())
+    ? `取數時間：${fetchedAt}` : "取數時間未記錄";
+  const stale = age > 7 ? `｜最後一期距今 ${age} 日，請核對有冇更新` : "";
+  const fallback = state.analysisMetadata?.fallback ? "｜本地資料未可用，已改用快照" : "";
+  els.analysisMeta.textContent = `資料：${source}｜截至 ${cutoff}｜${acquisition}${stale}${fallback}；未即時核對官方最新結果。`;
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchAnalysisData() {
   if (!els.analysisStatus) return;
-  els.analysisStatus.textContent = "連接中…";
+  els.analysisStatus.textContent = "載入歷史資料中…";
   try {
-    let data = null;
+    let data;
+    let draws;
+    let source = "local";
     try {
-      const response = await fetch(LOCAL_API, { cache: "no-store" });
-      if (response.ok) {
-        data = await response.json();
-      }
-    } catch (err) {
-      data = null;
-    }
-    if (!data) {
-      const response = await fetch(STATIC_API, { cache: "no-store" });
-      if (!response.ok) throw new Error("fetch_failed");
+      const response = await fetchWithTimeout(LOCAL_API, { cache: "no-store" });
+      if (!response.ok) throw new Error("local_fetch_failed");
       data = await response.json();
+      draws = readAnalysisPayload(data);
+    } catch (err) {
+      source = "snapshot";
+      const response = await fetchWithTimeout(STATIC_API, { cache: "no-store" });
+      if (!response.ok) throw new Error("snapshot_fetch_failed");
+      data = await response.json();
+      draws = readAnalysisPayload(data);
     }
-    state.analysisDraws = Array.isArray(data.draws) ? data.draws : [];
+    state.analysisDraws = draws;
+    state.analysisSource = source;
+    state.analysisMetadata = { fetchedAt: data.fetchedAt || null, fallback: source === "snapshot" };
     updateAnalysisView();
     updateRepeatInfo();
-    if (els.danStatus) {
-      els.danStatus.textContent = "可點選自動揀膽。";
-    }
-    if (els.danList && !els.danList.children.length) {
-      els.danList.innerHTML = "";
-    }
+    renderAnalysisMetadata();
   } catch (err) {
     state.analysisDraws = [];
-    if (els.analysisStatus) {
-      els.analysisStatus.textContent = "未連接本地資料";
-    }
+    state.analysisSource = null;
+    state.analysisMetadata = null;
+    els.analysisStatus.textContent = "歷史資料載入失敗";
     updateAnalysisView();
     updateRepeatInfo();
-    if (els.danStatus) {
-      els.danStatus.textContent = "連接本地資料後先會有建議。";
-    }
+    renderAnalysisMetadata();
   }
 }
 
@@ -1347,6 +1447,7 @@ function pickRandomSet(pool, included = []) {
 }
 
 function maxConsecutiveRun(nums) {
+  nums = normalizePool(nums);
   let maxRun = 1;
   let run = 1;
   for (let i = 1; i < nums.length; i += 1) {
@@ -1496,6 +1597,23 @@ function getPoolStats(pool) {
 }
 
 function checkFeasibility(filters, pool) {
+  pool = normalizePool(pool);
+  const partitions = [
+    { label: "單雙", counts: { odd: filters.oddCount, even: filters.evenCount } },
+    { label: "大小", counts: { small: filters.smallCount, big: filters.bigCount } },
+    { label: "顏色", counts: filters.colorCounts },
+    { label: "五行", counts: filters.elementCounts }
+  ];
+  for (const { label, counts } of partitions) {
+    const selected = Object.values(counts).filter((value) => value !== null);
+    if (selected.some((value) => !Number.isInteger(value) || value < 0 || value > 6)) {
+      return { ok: false, message: `${label}數量必須係 0–6 嘅整數。` };
+    }
+    const total = selected.reduce((sum, value) => sum + value, 0);
+    if (total > 6 || (selected.length === Object.keys(counts).length && total !== 6)) {
+      return { ok: false, message: `${label}指定數量合共 ${total} 個，與每組 6 個有矛盾。` };
+    }
+  }
   if (pool.length < 6) {
     return { ok: false, message: "可用號碼唔夠 6 個。" };
   }
@@ -1597,11 +1715,64 @@ function checkFeasibility(filters, pool) {
   if (filters.elementCounts.earth !== null && filters.elementCounts.earth > stats.earth) {
     return { ok: false, message: "土屬號碼唔夠用。" };
   }
+  if (included.length && maxConsecutiveRun(included) > filters.maxConsecutive) {
+    return { ok: false, message: "膽號本身已超出最多連號限制。" };
+  }
+  if (included.length && filters.maxTail !== null && maxTailCount(included) > filters.maxTail) {
+    return { ok: false, message: "膽號本身已超出最多同尾限制。" };
+  }
+  const free = pool.filter((num) => !state.included.has(num));
+  const needed = 6 - included.length;
+  const requiredSum = included.reduce((sum, num) => sum + num, 0);
+  let minSum = requiredSum + free.slice(0, needed).reduce((sum, num) => sum + num, 0);
+  let maxSum = requiredSum + (needed ? free.slice(-needed) : []).reduce((sum, num) => sum + num, 0);
+  const groupOf = (num, counts) => {
+    if ("odd" in counts) return num % 2 ? "odd" : "even";
+    if ("small" in counts) return num <= 24 ? "small" : "big";
+    if ("red" in counts) return getColorClass(num);
+    return { "金": "metal", "木": "wood", "水": "water", "火": "fire", "土": "earth" }[getElementTag(num)];
+  };
+  for (const { label, counts } of partitions) {
+    let remaining = needed, lower = requiredSum, upper = requiredSum;
+    const unspecified = [];
+    for (const [group, target] of Object.entries(counts)) {
+      const available = free.filter((num) => groupOf(num, counts) === group);
+      if (target === null) { unspecified.push(...available); continue; }
+      const take = target - included.filter((num) => groupOf(num, counts) === group).length;
+      if (take < 0 || take > available.length) return { ok: false, message: `${label}數量與膽號或可用號碼有矛盾。` };
+      remaining -= take;
+      lower += available.slice(0, take).reduce((sum, num) => sum + num, 0);
+      upper += (take ? available.slice(-take) : []).reduce((sum, num) => sum + num, 0);
+    }
+    if (remaining < 0 || remaining > unspecified.length) return { ok: false, message: `${label}數量無法湊成 6 個號碼。` };
+    unspecified.sort((a, b) => a - b);
+    lower += unspecified.slice(0, remaining).reduce((sum, num) => sum + num, 0);
+    upper += (remaining ? unspecified.slice(-remaining) : []).reduce((sum, num) => sum + num, 0);
+    minSum = Math.max(minSum, lower);
+    maxSum = Math.min(maxSum, upper);
+  }
+  if (filters.sumMax !== null && minSum > filters.sumMax) {
+    return { ok: false, message: `按膽號及數量限制，總和至少 ${minSum}，超出上限 ${filters.sumMax}。` };
+  }
+  if (filters.sumMin !== null && maxSum < filters.sumMin) {
+    return { ok: false, message: `按膽號及數量限制，總和最多 ${maxSum}，低於下限 ${filters.sumMin}。` };
+  }
   return { ok: true };
 }
 
+function normalizePool(pool) {
+  return [...new Set(pool)].sort((a, b) => a - b);
+}
+
+function getTicketCount() {
+  return Math.min(Math.max(Math.trunc(parseNumber(els.ticketCount?.value) || 10), 10), 100);
+}
+
 function buildFilterKey(filters, pool) {
+  pool = normalizePool(pool);
   const parts = [
+    state.historyMode,
+    els.dragCount?.value ?? "",
     pool.join(","),
     [...state.included].sort((a, b) => a - b).join(","),
     [...state.dragged].sort((a, b) => a - b).join(","),
@@ -1627,6 +1798,7 @@ function buildFilterKey(filters, pool) {
 }
 
 async function countCombinations(pool, filters, required, token) {
+  pool = normalizePool(pool);
   const n = pool.length;
   if (n < 6) return 0;
   const feasibility = checkFeasibility(filters, pool);
@@ -1937,55 +2109,101 @@ function isValid(nums, filters) {
   return true;
 }
 
+function chooseCount(n, k) {
+  if (k < 0 || k > n) return 0;
+  let total = 1;
+  for (let i = 1; i <= k; i += 1) total = total * (n - k + i) / i;
+  return Math.round(total);
+}
+
+function renderGenerationSummary() {
+  if (!els.generationSummary) return;
+  const report = state.generationReport;
+  if (!report) { els.generationSummary.textContent = "未生成。"; return; }
+  const available = report.available === null ? "計算中／未確定" : report.available.toLocaleString("en-US");
+  els.generationSummary.textContent = `要求 ${report.requested} 組｜實際 ${report.produced} 組（不重複）｜有效組合 ${available}`;
+}
+
 function generateSets(poolOverride, filtersOverride) {
   buildExcluded();
+  setGenerateStatus("");
   const filters = filtersOverride || readFilters();
   const basePool = poolOverride || getFilteredPool(filters);
-  let pool = basePool;
+  let pool = normalizePool(basePool);
   if (state.historyMode === "include" && state.dragged.size) {
     const dragPool = [...state.dragged].filter((n) => basePool.includes(n));
-    pool = [...new Set([...dragPool, ...state.included])];
+    pool = normalizePool([...dragPool, ...[...state.included].filter((n) => basePool.includes(n))]);
   }
+  const total = getTicketCount();
+  const countKey = buildFilterKey(filters, pool);
+  state.generationReport = { countKey, requested: total, produced: 0, available: null };
   const feasibility = checkFeasibility(filters, pool);
   if (!feasibility.ok) {
-    setGenerateStatus(`${feasibility.message}請減少排除條件。`);
+    setGenerateStatus(feasibility.message);
+    state.generationReport.available = 0;
+    renderGenerationSummary();
     return [];
   }
-  const included = [...state.included].sort((a, b) => a - b);
-  if (included.length > 6) {
-    setGenerateStatus("膽號超過 6 個。");
-    return [];
-  }
-  if (included.some((n) => !pool.includes(n))) {
-    setGenerateStatus("膽號同排除或條件衝突。");
-    return [];
-  }
-
-  const total = Math.min(
-    Math.max(parseNumber(els.ticketCount?.value) || 10, 10),
-    100
-  );
+  const included = normalizePool([...state.included]);
+  const free = pool.filter((num) => !state.included.has(num));
+  const needed = 6 - included.length;
   const resultSets = [];
-  const maxAttempts = 20000;
-
-  for (let i = 0; i < total; i += 1) {
-    let found = null;
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+  // Enumerate only bounded small candidate spaces, never millions of arrays.
+  if (chooseCount(free.length, needed) <= 50000) {
+    const valid = [];
+    const visit = (start, chosen) => {
+      if (chosen.length === needed) {
+        const nums = normalizePool([...included, ...chosen]);
+        if (isValid(nums, filters)) valid.push(nums);
+        return;
+      }
+      for (let i = start; i <= free.length - (needed - chosen.length); i += 1) {
+        visit(i + 1, [...chosen, free[i]]);
+      }
+    };
+    visit(0, []);
+    state.generationReport.available = valid.length;
+    for (let i = valid.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [valid[i], valid[j]] = [valid[j], valid[i]];
+    }
+    resultSets.push(...valid.slice(0, total));
+    if (!valid.length) setGenerateStatus("已完整檢查候選組合：現時所有條件合併後無有效組合；請逐項調整條件。");
+    else if (valid.length < total) setGenerateStatus(`只有 ${valid.length} 個有效而不同嘅組合，已全部列出。`);
+  } else {
+    const seen = new Set();
+    const maxAttempts = 20000;
+    for (let attempt = 0; attempt < maxAttempts && resultSets.length < total; attempt += 1) {
       const nums = pickRandomSet(pool, included);
-      if (isValid(nums, filters)) {
-        found = nums;
-        break;
+      const key = nums.join(",");
+      if (!seen.has(key) && isValid(nums, filters)) {
+        seen.add(key);
+        resultSets.push(nums);
       }
     }
-    if (!found) {
-      setGenerateStatus("搵唔到符合條件嘅組合，試下放鬆條件。");
-      break;
+    if (resultSets.length < total) {
+      setGenerateStatus(`抽樣達上限，只產生 ${resultSets.length}/${total} 個不同組合；未抽足唔代表條件無解，請留意精確組合數。`);
     }
-    resultSets.push(found);
   }
-
+  state.generationReport.produced = resultSets.length;
   state.lastGenerated = { filters, total };
+  renderGenerationSummary();
   return resultSets;
+}
+
+function applyCombinationCount(count, filters, pool, key) {
+  if (!state.generationReport || state.generationReport.countKey !== key) return;
+  state.generationReport.available = count;
+  renderGenerationSummary();
+  if (count === 0) {
+    const feasibility = checkFeasibility(filters, pool);
+    const message = feasibility.ok
+      ? "經完整計算，現時所有條件合併後無有效組合；未能單憑某一項條件判斷原因，請逐項調整。"
+      : feasibility.message;
+    setGenerateStatus(message);
+    if (els.constraintStatus) els.constraintStatus.textContent = message;
+    renderResults([]);
+  }
 }
 
 function renderResults(sets) {
@@ -2095,29 +2313,23 @@ function updateCountConstraints(source) {
   let maxFire = 6 - (metalVal ?? 0) - (woodVal ?? 0) - (waterVal ?? 0) - (earthVal ?? 0);
   let maxEarth = 6 - (metalVal ?? 0) - (woodVal ?? 0) - (waterVal ?? 0) - (fireVal ?? 0);
 
-  if (source === "small" && smallVal !== null && bigVal === null && maxBig !== null) {
-    setSelectedCount(els.bigCount, maxBig);
-    maxSmall = 6 - maxBig;
-  } else if (source === "big" && bigVal !== null && smallVal === null && maxSmall !== null) {
-    setSelectedCount(els.smallCount, maxSmall);
-    maxBig = 6 - maxSmall;
-  } else if (source === "odd" && oddVal !== null) {
-    const other = 6 - oddVal;
-    setSelectedCount(els.evenCount, other);
-    maxEven = other;
-    maxOdd = oddVal;
-  } else if (source === "even" && evenVal !== null) {
-    const other = 6 - evenVal;
-    setSelectedCount(els.oddCount, other);
-    maxOdd = other;
-    maxEven = evenVal;
+  if (source === "small" || source === "big") {
+    const value = source === "small" ? smallVal : bigVal;
+    setSelectedCount(source === "small" ? els.bigCount : els.smallCount, value === null ? null : 6 - value);
+    maxSmall = source === "small" ? value : value === null ? null : 6 - value;
+    maxBig = source === "big" ? value : value === null ? null : 6 - value;
+  } else if (source === "odd" || source === "even") {
+    const value = source === "odd" ? oddVal : evenVal;
+    setSelectedCount(source === "odd" ? els.evenCount : els.oddCount, value === null ? null : 6 - value);
+    maxOdd = source === "odd" ? value : value === null ? null : 6 - value;
+    maxEven = source === "even" ? value : value === null ? null : 6 - value;
   }
 
   const cleared =
-    setCountDisabled(els.bigCount, maxBig) ||
-    setCountDisabled(els.smallCount, maxSmall) ||
-    setCountDisabled(els.evenCount, maxEven) ||
-    setCountDisabled(els.oddCount, maxOdd) ||
+    setCountDisabled(els.bigCount, null) ||
+    setCountDisabled(els.smallCount, null) ||
+    setCountDisabled(els.evenCount, null) ||
+    setCountDisabled(els.oddCount, null) ||
     setCountDisabled(els.redCount, maxRed) ||
     setCountDisabled(els.blueCount, maxBlue) ||
     setCountDisabled(els.greenCount, maxGreen) ||
@@ -2182,6 +2394,7 @@ function scheduleComboCount(filters, pool, key) {
     const comboKey = key || buildFilterKey(activeFilters, activePool);
     if (comboKey === state.lastComboKey && state.lastComboCount !== null) {
       setComboCount(`可組合：${state.lastComboCount.toLocaleString("en-US")}`);
+      applyCombinationCount(state.lastComboCount, activeFilters, activePool, comboKey);
       return;
     }
     setComboCount("可組合：計算中…");
@@ -2190,13 +2403,52 @@ function scheduleComboCount(filters, pool, key) {
     state.lastComboKey = comboKey;
     state.lastComboCount = count;
     setComboCount(`可組合：${count.toLocaleString("en-US")}`);
+    applyCombinationCount(count, activeFilters, activePool, comboKey);
   }, 200);
 }
 
-function autoUpdate() {
+function renderActiveConditions(filters, pool) {
+  if (!els.activeConditions) return;
+  const lines = [];
+  const historyCount = parseNumber(els.lastN?.value) || 0;
+  if (state.historyMode === "exclude") {
+    lines.push(`模式：排除歷史號碼；所選 ${historyCount} 期／已載入 ${state.draws.length} 期，主號碼及特別號碼共排除 ${state.excluded.size} 個`);
+  } else {
+    const bankers = normalizePool([...state.included]);
+    const validDrags = [...state.dragged].filter((n) => pool.includes(n));
+    lines.push(`模式：手選膽拖；每組必須含全部 ${bankers.length} 個膽${bankers.length ? `（${bankers.map(pad2).join("、")}）` : "（未選膽）"}`);
+    lines.push(state.dragged.size
+      ? `其餘 ${6 - bankers.length} 個從所選 ${state.dragged.size} 拖中可用嘅 ${validDrags.length} 個選取`
+      : `未選拖碼：其餘 ${6 - bankers.length} 個從所有符合條件嘅非膽號選取`);
+    const limit = parseNumber(els.dragCount?.value);
+    if (limit !== null) lines.push(`拖碼池指定數量 ${limit} 個（唔係每組使用數量）`);
+    lines.push("歷史只提供可點選膽號，唔會自動強制包含歷史號碼");
+  }
+  lines.push(`候選號碼池 ${pool.length} 個`);
+  const labels = [["單數", filters.oddCount], ["雙數", filters.evenCount], ["細（1–24）", filters.smallCount], ["大（25–49）", filters.bigCount]];
+  labels.forEach(([name, value]) => { if (value !== null) lines.push(`${name}恰好 ${value} 個`); });
+  for (const [counts, names, elements] of [
+    [filters.colorCounts, {red:"紅",blue:"藍",green:"綠"}, {red:els.redCount,blue:els.blueCount,green:els.greenCount}],
+    [filters.elementCounts, {metal:"金",wood:"木",water:"水",fire:"火",earth:"土"}, {metal:els.metalCount,wood:els.woodCount,water:els.waterCount,fire:els.fireCount,earth:els.earthCount}]
+  ]) {
+    Object.entries(counts).forEach(([group, value]) => {
+      if (value !== null) lines.push(`${names[group]}恰好 ${value} 個${getSelectedCount(elements[group]) === null ? "（由其餘數量推導）" : ""}`);
+    });
+  }
+  if (filters.sumMin !== null || filters.sumMax !== null) lines.push(`總和 ${filters.sumMin ?? "不限"}–${filters.sumMax ?? "不限"}`);
+  if (filters.maxConsecutive < 6) lines.push(`最多連續 ${filters.maxConsecutive} 個`);
+  if (filters.maxTail !== null) lines.push(`同一尾數最多 ${filters.maxTail} 個`);
+  if (filters.rowLimit?.length) lines.push(`只用號碼區間：${filters.rowLimit.map((row) => ["", "01–10", "11–20", "21–30", "31–40", "41–49"][row]).join("、")}`);
+  els.activeConditions.textContent = lines.join("；");
+  const feasibility = checkFeasibility(filters, pool);
+  if (els.constraintStatus) els.constraintStatus.textContent = feasibility.ok ? "單項及基本交互檢查通過；最終以精確組合數為準。" : feasibility.message;
+}
+
+function autoUpdate(forceGenerate = false) {
   clearTimeout(autoTimer);
+  clearTimeout(countTimer);
+  state.countToken += 1;
   autoTimer = setTimeout(() => {
-    setGenerateStatus("計算中…");
     updateSumRangeUI();
     updateAvailableCount();
     const filters = readFilters();
@@ -2204,7 +2456,7 @@ function autoUpdate() {
     let pool = filteredPool;
     if (state.historyMode === "include" && state.dragged.size) {
       const dragPool = [...state.dragged].filter((n) => filteredPool.includes(n));
-      pool = [...new Set([...dragPool, ...state.included])];
+      pool = normalizePool([...dragPool, ...[...state.included].filter((n) => filteredPool.includes(n))]);
     }
     const basePool = [];
     for (let i = 1; i <= 49; i += 1) {
@@ -2212,26 +2464,24 @@ function autoUpdate() {
     }
     updateConsecutiveList(basePool);
     const key = buildFilterKey(filters, pool);
+    renderActiveConditions(filters, pool);
     const excludedKey = [...state.excluded].sort((a, b) => a - b).join(",");
     if (excludedKey !== state.lastExcludedKey) {
       renderCategoryLists();
       state.lastExcludedKey = excludedKey;
     }
-    if (key !== state.lastGeneratedKey) {
-      const sets = generateSets(pool, filters);
-      if (sets.length) {
-        renderResults(sets);
-        setGenerateStatus("");
-      }
-      state.lastGeneratedKey = key;
-    } else {
+    const generationKey = `${key}|tickets:${getTicketCount()}`;
+    if (forceGenerate === true || generationKey !== state.lastGeneratedKey) {
       setGenerateStatus("");
+      const sets = generateSets(pool, filters);
+      renderResults(sets);
+      state.lastGeneratedKey = generationKey;
     }
     scheduleComboCount(filters, pool, key);
   }, 250);
 }
 
-els.generateBtn.addEventListener("click", autoUpdate);
+els.generateBtn.addEventListener("click", () => autoUpdate(true));
 
 if (els.numberBoard) {
   els.numberBoard.addEventListener("click", (event) => {

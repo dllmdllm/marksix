@@ -2,113 +2,24 @@
 <html lang="zh-HK">
   <head>
     <meta charset="utf-8" />
+    <meta name="marksix-ui-version" content="workflow-ui-20261014" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>六合彩號碼篩選器</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Space+Grotesk:wght@400;600;700&amp;display=swap" rel="stylesheet" />
   </head>
   <body>
-    <main class="page">
-      <header class="hero">
+    <main class="page"><header class="hero">
         <p class="eyebrow">Mark Six Lab</p>
         <h1>六合彩號碼篩選器</h1>
         <div class="hero-details" id="heroJackpot">-</div>
-      </header>
-
-      <section class="panel number-board">
-        <div class="result-head">
-          <h2>1-49 號碼盤</h2>
-          <span class="pill">跟馬會顏色分組</span>
-        </div>
-        <div id="numberBoard" class="number-grid"></div>
-        <p class="hint">被排除嘅號碼會變成灰色。</p>
-      </section>
-
-      <section class="panel controls">
-        <div id="repeatInfo" class="repeat-info">
-          <p class="hint">歷史上，下一期（包括特別號碼）</p>
-          <div class="repeat-table">
-            <div class="repeat-row repeat-head">
-              <div class="repeat-label">號碼重覆</div>
-              <div class="repeat-cell">1期</div>
-              <div class="repeat-cell">2期</div>
-              <div class="repeat-cell">3期</div>
-              <div class="repeat-cell">4期</div>
-              <div class="repeat-cell">5期</div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少1個</div>
-              <div class="repeat-cell" data-repeat="atLeast1"></div>
-              <div class="repeat-cell" data-repeat="atLeast1"></div>
-              <div class="repeat-cell" data-repeat="atLeast1"></div>
-              <div class="repeat-cell" data-repeat="atLeast1"></div>
-              <div class="repeat-cell" data-repeat="atLeast1"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少2個</div>
-              <div class="repeat-cell" data-repeat="atLeast2"></div>
-              <div class="repeat-cell" data-repeat="atLeast2"></div>
-              <div class="repeat-cell" data-repeat="atLeast2"></div>
-              <div class="repeat-cell" data-repeat="atLeast2"></div>
-              <div class="repeat-cell" data-repeat="atLeast2"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少3個</div>
-              <div class="repeat-cell" data-repeat="atLeast3"></div>
-              <div class="repeat-cell" data-repeat="atLeast3"></div>
-              <div class="repeat-cell" data-repeat="atLeast3"></div>
-              <div class="repeat-cell" data-repeat="atLeast3"></div>
-              <div class="repeat-cell" data-repeat="atLeast3"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少4個</div>
-              <div class="repeat-cell" data-repeat="atLeast4"></div>
-              <div class="repeat-cell" data-repeat="atLeast4"></div>
-              <div class="repeat-cell" data-repeat="atLeast4"></div>
-              <div class="repeat-cell" data-repeat="atLeast4"></div>
-              <div class="repeat-cell" data-repeat="atLeast4"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少5個</div>
-              <div class="repeat-cell" data-repeat="atLeast5"></div>
-              <div class="repeat-cell" data-repeat="atLeast5"></div>
-              <div class="repeat-cell" data-repeat="atLeast5"></div>
-              <div class="repeat-cell" data-repeat="atLeast5"></div>
-              <div class="repeat-cell" data-repeat="atLeast5"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少6個</div>
-              <div class="repeat-cell" data-repeat="atLeast6"></div>
-              <div class="repeat-cell" data-repeat="atLeast6"></div>
-              <div class="repeat-cell" data-repeat="atLeast6"></div>
-              <div class="repeat-cell" data-repeat="atLeast6"></div>
-              <div class="repeat-cell" data-repeat="atLeast6"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">至少7個</div>
-              <div class="repeat-cell" data-repeat="atLeast7"></div>
-              <div class="repeat-cell" data-repeat="atLeast7"></div>
-              <div class="repeat-cell" data-repeat="atLeast7"></div>
-              <div class="repeat-cell" data-repeat="atLeast7"></div>
-              <div class="repeat-cell" data-repeat="atLeast7"></div>
-            </div>
-            <div class="repeat-row">
-              <div class="repeat-label">平均重覆數</div>
-              <div class="repeat-cell" data-repeat="avgOverlap"></div>
-              <div class="repeat-cell" data-repeat="avgOverlap"></div>
-              <div class="repeat-cell" data-repeat="avgOverlap"></div>
-              <div class="repeat-cell" data-repeat="avgOverlap"></div>
-              <div class="repeat-cell" data-repeat="avgOverlap"></div>
-            </div>
-          </div>
-          <p class="hint repeat-status">連接本地資料後先會顯示歷史比例。</p>
-        </div>
-        <div class="field line">
+      </header><nav class="workspace-nav" aria-label="選號工作區"><div role="tablist" aria-label="選號與歷史分析" class="workspace-tabs"><button type="button" role="tab" id="chooseTab" aria-controls="chooseView" aria-selected="true" tabindex="0">1 揀號碼</button><button type="button" role="tab" id="filtersTab" aria-controls="filtersView" aria-selected="false" tabindex="-1">2 設條件</button><button type="button" role="tab" id="resultsTab" aria-controls="resultsView" aria-selected="false" tabindex="-1">3 睇結果</button><button type="button" role="tab" id="historyTab" aria-controls="historyView" aria-selected="false" tabindex="-1">歷史分析</button></div></nav><div class="workspace-context"><p id="workflowFeedback" class="workflow-feedback" role="status"></p><p id="workflowCount" class="workflow-count" aria-live="polite">可組合：計算中…</p><details class="data-context" id="dataContext"><summary id="dataSummary">資料來源及截止日期</summary><div><p id="analysisMeta" class="hint" role="status">歷史資料來源及截止日期載入中…</p><p class="hint">歷史冷熱及揀膽只供整理號碼，未經驗證可提高中獎機會。來源工具使用 <a href="https://info.cld.hkjc.com/graphql/base/" target="_blank" rel="noopener noreferrer">馬會公開資料端點</a>；隨附快照未即時對帳。</p></div></details><details class="panel active-summary progressive">
+        <summary>生效條件與矛盾說明</summary>
+        <p id="activeConditions" class="hint">條件載入中…</p>
+        <p id="constraintStatus" class="hint" role="status"></p>
+      </details></div><div id="chooseView" class="workspace-view" role="tabpanel" aria-labelledby="chooseTab" tabindex="-1"><section class="panel controls"><h2>1. 揀號碼</h2><p class="hint">先揀模式及歷史期數，再選膽／拖。可隨時到其他檢視，設定會保留。</p><div class="field line">
           <label for="lastN">歷史組合幾多期</label>
           <div class="inline">
             <select id="lastN">
@@ -121,34 +32,35 @@
             </select>
           </div>
           <div class="inline">
-            <label class="check"><input type="radio" name="historyMode" value="exclude" checked /><span>排除</span></label>
-            <label class="check"><input type="radio" name="historyMode" value="include" /><span>包含</span></label>
+            <label class="check"><input type="radio" name="historyMode" value="exclude" checked /><span>排除歷史號碼</span></label>
+            <label class="check"><input type="radio" name="historyMode" value="include" /><span>手選膽拖</span></label>
           </div>
           <p class="hint" id="fetchStatus">未更新</p>
+        </div><div class="number-board selection-board">
+        <div class="result-head">
+          <h3>1-49 號碼盤</h3>
+          <span class="pill">跟馬會顏色分組</span>
         </div>
-
-        <div class="field line">
+        <div id="numberBoard" class="number-grid"></div>
+        <p class="hint" id="boardHint">排除歷史號碼模式：灰色係已排除號碼；號碼盤只供查看。</p>
+      </div><div class="field line">
           <label id="historyLabel">排除期數</label>
           <div id="excludedSummary" class="excluded-summary">未排除</div>
-        </div>
-
-        <div class="field line" id="includeSection">
-          <label>膽號（來自歷史組合）</label>
+        </div><div class="field line" id="includeSection">
+          <h3>膽號（來自歷史組合）</h3>
           <div class="inline">
             <button id="clearInclude" class="ghost-btn">清除膽號</button>
-            <button id="pickDan" class="ghost-btn">自動揀 2 個膽</button>
+            <button id="pickDan" class="ghost-btn" disabled>自動揀 2 個膽</button>
           </div>
-          <p class="hint">由歷史組合點選，最多 6 個（期數跟「歷史組合幾多期」）。</p>
+          <p class="hint">由歷史組合點選，最多 6 個（期數跟「歷史組合幾多期」）。每組必須包含全部已選膽號；切換手選膽拖本身唔會強制包含歷史號碼。</p>
           <div id="includeList" class="ball-list"></div>
-          <p id="includeStatus" class="hint">未選擇膽號。</p>
-          <p id="danStatus" class="hint">連接本地資料後先會有建議。</p>
+          <p id="includeStatus" class="hint" role="status">未選擇膽號。</p>
+          <p id="danStatus" class="hint" role="status">請先載入至少 1 期歷史組合。</p>
           <p id="danReason" class="hint"></p>
-        </div>
-
-        <div class="field line" id="dragSection">
-          <label>拖碼（可用號碼）</label>
+        </div><div class="field line" id="dragSection">
+          <h3>拖碼候選池（每組其餘號碼由此選取）</h3>
           <div class="inline">
-            <select id="dragCount">
+            <select id="dragCount" aria-label="指定拖碼候選池數量">
               <option value="" selected>無限制</option>
               <option value="1">1 個</option>
               <option value="2">2 個</option>
@@ -163,19 +75,306 @@
             </select>
             <button id="clearDrag" class="ghost-btn">清除拖碼</button>
           </div>
-          <p class="hint">拖碼唔限歷史組合，用號碼盤點選。</p>
+          <p class="hint">拖碼唔限歷史組合，用號碼盤點選。全部膽號每組必出；選咗拖碼，餘下號碼只會從可用拖碼揀。未選拖碼就用所有符合條件嘅非膽號。</p>
           <div id="dragList" class="ball-list"></div>
-          <p id="dragStatus" class="hint">未選擇拖碼。</p>
-        </div>
-
-        <div class="field line" id="danPreview">
-          <label>膽號建議預覽</label>
+          <p id="dragStatus" class="hint" role="status">未選擇拖碼。</p>
+        </div><details class="field line" id="danPreview">
+          <summary>自動揀膽說明與預覽</summary>
           <div id="danList" class="ball-list"></div>
           <p class="hint">規則：熱 + 冷／避連號／分色／分大小</p>
+        </details></section><div class="view-actions"><button type="button" class="ghost" data-view-target="filters">下一步：設條件</button></div></div><div id="filtersView" class="workspace-view" role="tabpanel" aria-labelledby="filtersTab" tabindex="-1" hidden><section class="panel filters"><h2>2. 設條件 <span class="pill" id="availableCount">（可用號碼：-）</span></h2><p class="hint">每項數量只選一個；未選即不限，0 表示該類不能出現。單雙及大小會互補更新，再點已選值可清除。</p><div class="field line">
+          <label>單數 / 雙數</label>
+          <div class="count-stack">
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">單數</label>
+                <div id="oddCount" class="count-options" role="group" aria-label="單數數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="單數恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="單數恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="單數恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="單數恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="單數恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="單數恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="單數恰好 6 個" /><span>6</span></label>
+                </div>
+                <span id="oddNote" class="count-note"></span>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="oddList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">雙數</label>
+                <div id="evenCount" class="count-options" role="group" aria-label="雙數數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="雙數恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="雙數恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="雙數恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="雙數恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="雙數恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="雙數恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="雙數恰好 6 個" /><span>6</span></label>
+                </div>
+                <span id="evenNote" class="count-note"></span>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="evenList" class="count-line-list"></div></details>
+            </div>
+          </div>
+        </div><div class="field line">
+          <label>細號碼(1-24) / 大號碼(25-49)</label>
+          <div class="count-stack">
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">細號碼</label>
+                <div id="smallCount" class="count-options" role="group" aria-label="細號碼數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="細號碼恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="細號碼恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="細號碼恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="細號碼恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="細號碼恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="細號碼恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="細號碼恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="smallList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">大號碼</label>
+                <div id="bigCount" class="count-options" role="group" aria-label="大號碼數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="大號碼恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="大號碼恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="大號碼恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="大號碼恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="大號碼恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="大號碼恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="大號碼恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="bigList" class="count-line-list"></div></details>
+            </div>
+          </div>
+        </div><div class="field line">
+          <label>6個號碼總和（一般參考可以設喺 90–210 之間，中心位大約 150 左右）</label>
+          <div class="sum-range" id="sumRange">
+            <div class="range-bar">
+              <input id="sumMin" type="range" min="21" max="279" value="90" aria-label="六個號碼總和下限" />
+              <input id="sumMax" type="range" min="21" max="279" value="210" aria-label="六個號碼總和上限" />
+            </div>
+            <div class="range-values">
+              <span class="range-pill" id="sumMinLabel">90</span>
+              <span class="sep">–</span>
+              <span class="range-pill" id="sumMaxLabel">210</span>
+            </div>
+          </div>
+        </div><details id="advancedFilters" class="progressive advanced-filters" data-advanced><summary id="advancedSummary">進階條件：顏色、連號、同尾、區間及五行</summary><div class="field line">
+          <label>紅 / 藍 / 綠 數量</label>
+          <div class="count-stack">
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">紅</label>
+                <div id="redCount" class="count-options" role="group" aria-label="紅色數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="紅色恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="紅色恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="紅色恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="紅色恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="紅色恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="紅色恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="紅色恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="redList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">藍</label>
+                <div id="blueCount" class="count-options" role="group" aria-label="藍色數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="藍色恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="藍色恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="藍色恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="藍色恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="藍色恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="藍色恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="藍色恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="blueList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">綠</label>
+                <div id="greenCount" class="count-options" role="group" aria-label="綠色數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="綠色恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="綠色恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="綠色恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="綠色恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="綠色恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="綠色恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="綠色恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="greenList" class="count-line-list"></div></details>
+            </div>
+          </div>
+        </div><div class="field line">
+          <label for="maxConsecutive">最多連續幾個號碼</label>
+          <select id="maxConsecutive">
+            <option value="" selected>無限制</option>
+            <option value="2">2 個</option>
+            <option value="3">3 個</option>
+            <option value="4">4 個</option>
+            <option value="5">5 個</option>
+          </select>
+          <details class="category-reference"><summary>查看相關號碼</summary><div id="consecutiveList" class="count-line-list consecutive-list"></div></details>
+        </div><div class="field line">
+          <label for="maxTail">最多同尾數量 <span class="note">（6 個號碼入面，同一個尾數（0–9）最多可以出現幾多次）</span></label>
+          <select id="maxTail">
+            <option value="" selected>無限制</option>
+            <option value="1">1 次</option>
+            <option value="2">2 次</option>
+            <option value="3">3 次</option>
+            <option value="4">4 次</option>
+          </select>
+        </div><div class="field line">
+          <label>號碼區間限制（唔係盤面行數）</label>
+          <div id="rowLimit" class="count-stack row-stack">
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">區間 1（01-10）</label>
+                <label class="check row-check"><input type="checkbox" data-row="1" aria-label="只用號碼區間 01–10" /></label>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="row1List" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">區間 2（11-20）</label>
+                <label class="check row-check"><input type="checkbox" data-row="2" aria-label="只用號碼區間 11–20" /></label>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="row2List" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">區間 3（21-30）</label>
+                <label class="check row-check"><input type="checkbox" data-row="3" aria-label="只用號碼區間 21–30" /></label>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="row3List" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">區間 4（31-40）</label>
+                <label class="check row-check"><input type="checkbox" data-row="4" aria-label="只用號碼區間 31–40" /></label>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="row4List" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">區間 5（41-49）</label>
+                <label class="check row-check"><input type="checkbox" data-row="5" aria-label="只用號碼區間 41–49" /></label>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="row5List" class="count-line-list"></div></details>
+            </div>
+          </div>
+        </div><details class="progressive"><summary>五行分類（自選）</summary><div class="field line">
+          <label>金 / 木 / 水 / 火 / 土 數量</label>
+          <div class="count-stack">
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">金</label>
+                <div id="metalCount" class="count-options" role="group" aria-label="金數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="金恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="金恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="金恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="金恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="金恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="金恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="金恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="metalList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">木</label>
+                <div id="woodCount" class="count-options" role="group" aria-label="木數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="木恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="木恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="木恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="木恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="木恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="木恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="木恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="woodList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">水</label>
+                <div id="waterCount" class="count-options" role="group" aria-label="水數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="水恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="水恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="水恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="水恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="水恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="水恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="水恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="waterList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">火</label>
+                <div id="fireCount" class="count-options" role="group" aria-label="火數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="火恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="火恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="火恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="火恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="火恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="火恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="火恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="fireList" class="count-line-list"></div></details>
+            </div>
+            <div class="count-line">
+              <div class="count-line-head">
+                <label class="mini-label">土</label>
+                <div id="earthCount" class="count-options" role="group" aria-label="土數量（未選即不限）">
+                  <label class="check count-option"><input type="checkbox" data-count="0" aria-label="土恰好 0 個" /><span>0</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="1" aria-label="土恰好 1 個" /><span>1</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="2" aria-label="土恰好 2 個" /><span>2</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="3" aria-label="土恰好 3 個" /><span>3</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="4" aria-label="土恰好 4 個" /><span>4</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="5" aria-label="土恰好 5 個" /><span>5</span></label>
+                  <label class="check count-option"><input type="checkbox" data-count="6" aria-label="土恰好 6 個" /><span>6</span></label>
+                </div>
+              </div>
+              <details class="category-reference"><summary>查看相關號碼</summary><div id="earthList" class="count-line-list"></div></details>
+            </div>
+          </div>
+        </div></details></details></section><div class="view-actions"><button type="button" class="ghost" data-view-target="choose">返回揀號碼</button><button type="button" class="ghost" data-view-target="results">查看結果</button></div></div><div id="resultsView" class="workspace-view" role="tabpanel" aria-labelledby="resultsTab" tabindex="-1" hidden><section class="panel actions"><h2>3. 睇結果</h2><p class="hint">更改條件會自動更新結果；「重新抽選」會按目前設定再揀一次不同組合。</p>
+        <div class="row">
+          <button id="generateBtn" class="primary">重新抽選</button>
+          <div class="field">
+            <label for="ticketCount">生成組數（不重複）</label>
+            <select id="ticketCount" class="ghost">
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="40">40</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
         </div>
-      </section>
-
-      <section class="panel analysis">
+        <p class="hint" id="generateStatus">等緊你。</p>
+      </section><section class="panel results">
+        <div class="result-head">
+          <h3>生成結果</h3>
+        </div>
+        <p class="combo-count" id="comboCount" role="status">可組合：-</p>
+        <p id="generationSummary" class="hint" role="status">未生成。</p>
+        <div id="resultList" class="result-list"></div>
+      </section><div class="view-actions"><button type="button" class="ghost" data-view-target="filters">返回調整條件</button></div></div><div id="historyView" class="workspace-view" role="tabpanel" aria-labelledby="historyTab" tabindex="-1" hidden><p class="hint">歷史分析只描述過往，唔代表下期更易中；切換檢視唔會改動選號或條件。</p><section class="panel analysis">
         <div class="result-head">
           <h2>冷 / 熱號碼分析</h2>
         </div>
@@ -190,15 +389,10 @@
           </select>
           <span id="analysisStatus" class="hint">未連接本地資料</span>
         </div>
-        <div class="analysis-actions">
-          <button id="syncAll" class="ghost-btn">同步全部</button>
-          <button id="syncLatest" class="ghost-btn">同步最新</button>
-          <span id="syncStatus" class="hint">要開住頁面先會同步到本地 CSV</span>
-        </div>
-        <div class="analysis-progress">
-          <progress id="syncProgress" max="100" value="0"></progress>
-          <span id="syncProgressText" class="hint">0%</span>
-        </div>
+        
+        
+        
+        
         <div class="analysis-grid">
           <div class="analysis-block">
             <h3>未出現過</h3>
@@ -213,325 +407,94 @@
             <div id="analysisCounts" class="analysis-counts"></div>
           </div>
         </div>
-      </section>
-
-      <section class="panel filters">
-        <h2 class="center-title">注數條件設定 <span class="pill" id="availableCount">（可用號碼：-）</span></h2>
-        <div class="field line">
-          <label>單數 / 雙數</label>
-          <div class="count-stack">
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">單數</label>
-                <div id="oddCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-                <span id="oddNote" class="count-note"></span>
-              </div>
-              <div id="oddList" class="count-line-list"></div>
+      <details class="maintenance progressive"><summary>更新本地資料（需要本機服務）</summary><div><div class="analysis-actions">
+          <button id="syncAll" class="ghost-btn">同步全部</button>
+          <button id="syncLatest" class="ghost-btn">同步最新</button>
+          <span id="syncStatus" class="hint">同步需要本機 Python 服務；唔會更新網站快照</span>
+        </div><div class="analysis-progress">
+          <progress id="syncProgress" max="100" value="0"></progress>
+          <span id="syncProgressText" class="hint">0%</span>
+        </div></div></details></section><section class="panel"><div id="repeatInfo" class="repeat-info"><h3>歷史重覆比例</h3>
+          <p class="hint">歷史上，下一期（包括特別號碼）與之前 N 期號碼聯集嘅重覆比例；包含不同年代資料。</p>
+          <div class="repeat-table" role="table" aria-label="與前一至五期號碼聯集的歷史重覆比例">
+            <div class="repeat-row repeat-head" role="row">
+              <div class="repeat-label" role="columnheader">號碼重覆</div>
+              <div class="repeat-heading" role="columnheader">1期</div>
+              <div class="repeat-heading" role="columnheader">2期</div>
+              <div class="repeat-heading" role="columnheader">3期</div>
+              <div class="repeat-heading" role="columnheader">4期</div>
+              <div class="repeat-heading" role="columnheader">5期</div>
             </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">雙數</label>
-                <div id="evenCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-                <span id="evenNote" class="count-note"></span>
-              </div>
-              <div id="evenList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少1個</div>
+              <div class="repeat-cell" data-repeat="atLeast1" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast1" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast1" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast1" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast1" role="cell"></div>
             </div>
-          </div>
-        </div>
-
-        <div class="field line">
-          <label>細號碼(1-24) / 大號碼(25-49)</label>
-          <div class="count-stack">
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">細號碼</label>
-                <div id="smallCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="smallList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少2個</div>
+              <div class="repeat-cell" data-repeat="atLeast2" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast2" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast2" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast2" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast2" role="cell"></div>
             </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">大號碼</label>
-                <div id="bigCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="bigList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少3個</div>
+              <div class="repeat-cell" data-repeat="atLeast3" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast3" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast3" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast3" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast3" role="cell"></div>
             </div>
-          </div>
-        </div>
-
-        <div class="field line">
-          <label>紅 / 藍 / 綠 數量</label>
-          <div class="count-stack">
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">紅</label>
-                <div id="redCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="redList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少4個</div>
+              <div class="repeat-cell" data-repeat="atLeast4" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast4" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast4" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast4" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast4" role="cell"></div>
             </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">藍</label>
-                <div id="blueCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="blueList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少5個</div>
+              <div class="repeat-cell" data-repeat="atLeast5" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast5" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast5" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast5" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast5" role="cell"></div>
             </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">綠</label>
-                <div id="greenCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="greenList" class="count-line-list"></div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少6個</div>
+              <div class="repeat-cell" data-repeat="atLeast6" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast6" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast6" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast6" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast6" role="cell"></div>
+            </div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">至少7個</div>
+              <div class="repeat-cell" data-repeat="atLeast7" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast7" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast7" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast7" role="cell"></div>
+              <div class="repeat-cell" data-repeat="atLeast7" role="cell"></div>
+            </div>
+            <div class="repeat-row" role="row">
+              <div class="repeat-label" role="rowheader">平均重覆數</div>
+              <div class="repeat-cell" data-repeat="avgOverlap" role="cell"></div>
+              <div class="repeat-cell" data-repeat="avgOverlap" role="cell"></div>
+              <div class="repeat-cell" data-repeat="avgOverlap" role="cell"></div>
+              <div class="repeat-cell" data-repeat="avgOverlap" role="cell"></div>
+              <div class="repeat-cell" data-repeat="avgOverlap" role="cell"></div>
             </div>
           </div>
-        </div>
-
-        <div class="field line">
-          <label>金 / 木 / 水 / 火 / 土 數量</label>
-          <div class="count-stack">
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">金</label>
-                <div id="metalCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="metalList" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">木</label>
-                <div id="woodCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="woodList" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">水</label>
-                <div id="waterCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="waterList" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">火</label>
-                <div id="fireCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="fireList" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">土</label>
-                <div id="earthCount" class="count-options">
-                  <label class="check count-option"><input type="checkbox" data-count="0" /><span>0</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="1" /><span>1</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="2" /><span>2</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="3" /><span>3</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="4" /><span>4</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="5" /><span>5</span></label>
-                  <label class="check count-option"><input type="checkbox" data-count="6" /><span>6</span></label>
-                </div>
-              </div>
-              <div id="earthList" class="count-line-list"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="field line">
-          <label>行數限制</label>
-          <div id="rowLimit" class="count-stack row-stack">
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">1 行（01-10）</label>
-                <label class="check row-check"><input type="checkbox" data-row="1" /></label>
-              </div>
-              <div id="row1List" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">2 行（11-20）</label>
-                <label class="check row-check"><input type="checkbox" data-row="2" /></label>
-              </div>
-              <div id="row2List" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">3 行（21-30）</label>
-                <label class="check row-check"><input type="checkbox" data-row="3" /></label>
-              </div>
-              <div id="row3List" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">4 行（31-40）</label>
-                <label class="check row-check"><input type="checkbox" data-row="4" /></label>
-              </div>
-              <div id="row4List" class="count-line-list"></div>
-            </div>
-            <div class="count-line">
-              <div class="count-line-head">
-                <label class="mini-label">5 行（41-49）</label>
-                <label class="check row-check"><input type="checkbox" data-row="5" /></label>
-              </div>
-              <div id="row5List" class="count-line-list"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="field line">
-          <label for="maxConsecutive">唔要連續幾個號碼</label>
-          <select id="maxConsecutive">
-            <option value="" selected>無限制</option>
-            <option value="2">2 個</option>
-            <option value="3">3 個</option>
-            <option value="4">4 個</option>
-            <option value="5">5 個</option>
-          </select>
-          <div id="consecutiveList" class="count-line-list consecutive-list"></div>
-        </div>
-
-        <div class="field line">
-          <label for="maxTail">最多同尾數量 <span class="note">（6 個號碼入面，同一個尾數（0–9）最多可以出現幾多次）</span></label>
-          <select id="maxTail">
-            <option value="" selected>無限制</option>
-            <option value="1">1 次</option>
-            <option value="2">2 次</option>
-            <option value="3">3 次</option>
-            <option value="4">4 次</option>
-          </select>
-        </div>
-
-        <div class="field line">
-          <label>6個號碼總和（一般參考可以設喺 90–210 之間，中心位大約 150 左右）</label>
-          <div class="sum-range" id="sumRange">
-            <div class="range-bar">
-              <input id="sumMin" type="range" min="21" max="279" value="90" />
-              <input id="sumMax" type="range" min="21" max="279" value="210" />
-            </div>
-            <div class="range-values">
-              <span class="range-pill" id="sumMinLabel">90</span>
-              <span class="sep">–</span>
-              <span class="range-pill" id="sumMaxLabel">210</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel actions">
-        <div class="row">
-          <button id="generateBtn" class="primary">生成號碼</button>
-          <div class="field">
-            <select id="ticketCount" class="ghost">
-              <option value="10" selected>10</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-              <option value="40">40</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-        <p class="hint" id="generateStatus">等緊你。</p>
-      </section>
-
-      <section class="panel results">
-        <div class="result-head">
-          <h2>生成結果</h2>
-        </div>
-        <p class="combo-count" id="comboCount">可組合：-</p>
-        <div id="resultList" class="result-list"></div>
-      </section>
-
-      <footer class="footnote">
-      </footer>
-    </main>
+          <p class="hint repeat-status">載入歷史資料後先會顯示歷史比例。</p>
+        </div></section><button type="button" class="ghost" id="returnToWorkflow">返回揀號流程</button></div><footer class="footnote">
+      </footer><aside id="mobileActions" class="mobile-actions" aria-label="快速生成"><span id="mobileComboCount">可組合：計算中…</span><button type="button" class="primary" id="mobileGenerate">再抽並睇結果</button></aside></main>
 
     <script src="app.js"></script>
-  </body>
+  <script src="ui.js"></script></body>
 </html>
+
