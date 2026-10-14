@@ -26,12 +26,12 @@
           <span class="pill">跟馬會顏色分組</span>
         </div>
         <div id="numberBoard" class="number-grid"></div>
-        <p class="hint">被排除嘅號碼會變成灰色。</p>
+        <p class="hint" id="boardHint">排除歷史號碼模式：灰色係已排除號碼；號碼盤只供查看。</p>
       </section>
 
       <section class="panel controls">
         <div id="repeatInfo" class="repeat-info">
-          <p class="hint">歷史上，下一期（包括特別號碼）</p>
+          <p class="hint">歷史上，下一期（包括特別號碼）與之前 N 期號碼聯集嘅重覆比例；包含不同年代資料。</p>
           <div class="repeat-table">
             <div class="repeat-row repeat-head">
               <div class="repeat-label">號碼重覆</div>
@@ -106,7 +106,7 @@
               <div class="repeat-cell" data-repeat="avgOverlap"></div>
             </div>
           </div>
-          <p class="hint repeat-status">連接本地資料後先會顯示歷史比例。</p>
+          <p class="hint repeat-status">載入歷史資料後先會顯示歷史比例。</p>
         </div>
         <div class="field line">
           <label for="lastN">歷史組合幾多期</label>
@@ -121,8 +121,8 @@
             </select>
           </div>
           <div class="inline">
-            <label class="check"><input type="radio" name="historyMode" value="exclude" checked /><span>排除</span></label>
-            <label class="check"><input type="radio" name="historyMode" value="include" /><span>包含</span></label>
+            <label class="check"><input type="radio" name="historyMode" value="exclude" checked /><span>排除歷史號碼</span></label>
+            <label class="check"><input type="radio" name="historyMode" value="include" /><span>手選膽拖</span></label>
           </div>
           <p class="hint" id="fetchStatus">未更新</p>
         </div>
@@ -136,19 +136,19 @@
           <label>膽號（來自歷史組合）</label>
           <div class="inline">
             <button id="clearInclude" class="ghost-btn">清除膽號</button>
-            <button id="pickDan" class="ghost-btn">自動揀 2 個膽</button>
+            <button id="pickDan" class="ghost-btn" disabled>自動揀 2 個膽</button>
           </div>
-          <p class="hint">由歷史組合點選，最多 6 個（期數跟「歷史組合幾多期」）。</p>
+          <p class="hint">由歷史組合點選，最多 6 個（期數跟「歷史組合幾多期」）。每組必須包含全部已選膽號；切換手選膽拖本身唔會強制包含歷史號碼。</p>
           <div id="includeList" class="ball-list"></div>
           <p id="includeStatus" class="hint">未選擇膽號。</p>
-          <p id="danStatus" class="hint">連接本地資料後先會有建議。</p>
+          <p id="danStatus" class="hint">請先載入至少 1 期歷史組合。</p>
           <p id="danReason" class="hint"></p>
         </div>
 
         <div class="field line" id="dragSection">
-          <label>拖碼（可用號碼）</label>
+          <label>拖碼候選池（每組其餘號碼由此選取）</label>
           <div class="inline">
-            <select id="dragCount">
+            <select id="dragCount" aria-label="指定拖碼候選池數量">
               <option value="" selected>無限制</option>
               <option value="1">1 個</option>
               <option value="2">2 個</option>
@@ -163,7 +163,7 @@
             </select>
             <button id="clearDrag" class="ghost-btn">清除拖碼</button>
           </div>
-          <p class="hint">拖碼唔限歷史組合，用號碼盤點選。</p>
+          <p class="hint">拖碼唔限歷史組合，用號碼盤點選。全部膽號每組必出；選咗拖碼，餘下號碼只會從可用拖碼揀。未選拖碼就用所有符合條件嘅非膽號。</p>
           <div id="dragList" class="ball-list"></div>
           <p id="dragStatus" class="hint">未選擇拖碼。</p>
         </div>
@@ -190,10 +190,12 @@
           </select>
           <span id="analysisStatus" class="hint">未連接本地資料</span>
         </div>
+        <p id="analysisMeta" class="hint" role="status">歷史資料來源及截止日期載入中…</p>
+        <p class="hint">歷史冷熱及揀膽只供整理號碼，未經驗證可提高中獎機會。來源工具使用 <a href="https://info.cld.hkjc.com/graphql/base/" target="_blank" rel="noopener noreferrer">馬會公開資料端點</a>；隨附快照未即時對帳。</p>
         <div class="analysis-actions">
           <button id="syncAll" class="ghost-btn">同步全部</button>
           <button id="syncLatest" class="ghost-btn">同步最新</button>
-          <span id="syncStatus" class="hint">要開住頁面先會同步到本地 CSV</span>
+          <span id="syncStatus" class="hint">同步需要本機 Python 服務；唔會更新網站快照</span>
         </div>
         <div class="analysis-progress">
           <progress id="syncProgress" max="100" value="0"></progress>
@@ -424,39 +426,39 @@
         </div>
 
         <div class="field line">
-          <label>行數限制</label>
+          <label>號碼區間限制（唔係盤面行數）</label>
           <div id="rowLimit" class="count-stack row-stack">
             <div class="count-line">
               <div class="count-line-head">
-                <label class="mini-label">1 行（01-10）</label>
+                <label class="mini-label">區間 1（01-10）</label>
                 <label class="check row-check"><input type="checkbox" data-row="1" /></label>
               </div>
               <div id="row1List" class="count-line-list"></div>
             </div>
             <div class="count-line">
               <div class="count-line-head">
-                <label class="mini-label">2 行（11-20）</label>
+                <label class="mini-label">區間 2（11-20）</label>
                 <label class="check row-check"><input type="checkbox" data-row="2" /></label>
               </div>
               <div id="row2List" class="count-line-list"></div>
             </div>
             <div class="count-line">
               <div class="count-line-head">
-                <label class="mini-label">3 行（21-30）</label>
+                <label class="mini-label">區間 3（21-30）</label>
                 <label class="check row-check"><input type="checkbox" data-row="3" /></label>
               </div>
               <div id="row3List" class="count-line-list"></div>
             </div>
             <div class="count-line">
               <div class="count-line-head">
-                <label class="mini-label">4 行（31-40）</label>
+                <label class="mini-label">區間 4（31-40）</label>
                 <label class="check row-check"><input type="checkbox" data-row="4" /></label>
               </div>
               <div id="row4List" class="count-line-list"></div>
             </div>
             <div class="count-line">
               <div class="count-line-head">
-                <label class="mini-label">5 行（41-49）</label>
+                <label class="mini-label">區間 5（41-49）</label>
                 <label class="check row-check"><input type="checkbox" data-row="5" /></label>
               </div>
               <div id="row5List" class="count-line-list"></div>
@@ -465,7 +467,7 @@
         </div>
 
         <div class="field line">
-          <label for="maxConsecutive">唔要連續幾個號碼</label>
+          <label for="maxConsecutive">最多連續幾個號碼</label>
           <select id="maxConsecutive">
             <option value="" selected>無限制</option>
             <option value="2">2 個</option>
@@ -503,10 +505,17 @@
         </div>
       </section>
 
+      <section class="panel active-summary">
+        <h2>生效條件</h2>
+        <p id="activeConditions" class="hint">條件載入中…</p>
+        <p id="constraintStatus" class="hint" role="status"></p>
+      </section>
+
       <section class="panel actions">
         <div class="row">
           <button id="generateBtn" class="primary">生成號碼</button>
           <div class="field">
+            <label for="ticketCount">生成組數（不重複）</label>
             <select id="ticketCount" class="ghost">
               <option value="10" selected>10</option>
               <option value="20">20</option>
@@ -525,6 +534,7 @@
           <h2>生成結果</h2>
         </div>
         <p class="combo-count" id="comboCount">可組合：-</p>
+        <p id="generationSummary" class="hint" role="status">未生成。</p>
         <div id="resultList" class="result-list"></div>
       </section>
 

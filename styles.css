@@ -354,8 +354,22 @@ body {
   .repeat-cell {
     padding: 4px 2px;
   }
+  .repeat-info {
+    min-width: 0;
+  }
+  .repeat-table {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .repeat-row {
+    min-width: 254px;
+  }
   .analysis-actions {
-    display: none;
+    display: flex;
+  }
+  #analysisMeta,
+  #syncStatus {
+    overflow-wrap: anywhere;
   }
 }
 

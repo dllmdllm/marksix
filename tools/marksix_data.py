@@ -6,7 +6,8 @@ import gzip
 import sys
 import threading
 import time
-from datetime import date, datetime, timedelta
+import tempfile
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -320,6 +321,53 @@ def csv_to_json_rows(path):
     return output
 
 
+def export_snapshot(csv_path, output_path):
+    """Validate and export existing CSV records; never fetch or invent results."""
+    draws = csv_to_json_rows(csv_path)
+    if not draws:
+        raise ValueError("CSV has no draws; run init/update with a verified source first")
+    keys = set()
+    dates = set()
+    for draw in draws:
+        numbers = [*draw["numbers"], draw["special"]]
+        key = draw_key(draw)
+        draw_date = parse_date(draw["drawDate"])
+        if (draw["status"] != "Result" or len(numbers) != 7
+                or any(type(n) is not int or not 1 <= n <= 49 for n in numbers)
+                or len(set(numbers)) != 7 or draw_date is None
+                or draw["year"] <= 0 or draw["no"] <= 0):
+            raise ValueError(f"Invalid completed draw: {key}")
+        if key in keys or draw_date in dates:
+            raise ValueError(f"Duplicate draw: {key}")
+        keys.add(key)
+        dates.add(draw_date)
+    draws.sort(key=lambda draw: parse_date(draw["drawDate"]))
+    payload = {
+        "schemaVersion": 1,
+        "source": {"name": "Unverified CSV input", "acquisitionVerified": False},
+        "configuredSourceEndpoint": API_URL,
+        "fetchedAt": None,
+        "updatedAt": None,
+        "exportedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "lastDrawDate": draws[-1]["drawDate"][:10],
+        "total": len(draws),
+        "draws": draws
+    }
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8",
+                                         dir=output_path.parent, delete=False) as file:
+            temporary_path = Path(file.name)
+            json.dump(payload, file, ensure_ascii=False, separators=(",", ":"))
+            file.write("\n")
+        temporary_path.replace(output_path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+    return len(draws)
+
+
 def serve_api(path, port, auto_update=False, interval_hours=24):
     csv_path = path
 
@@ -346,7 +394,10 @@ def serve_api(path, port, auto_update=False, interval_hours=24):
             if self.path.startswith("/api/marksix"):
                 rows = csv_to_json_rows(csv_path)
                 payload = {
-                    "updatedAt": datetime.now().isoformat(timespec="seconds"),
+                    "updatedAt": None,
+                    "fetchedAt": None,
+                    "servedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "fileModifiedAt": datetime.fromtimestamp(csv_path.stat().st_mtime, timezone.utc).isoformat(timespec="seconds") if csv_path.exists() else None,
                     "total": len(rows),
                     "draws": rows
                 }
@@ -404,6 +455,10 @@ def main():
     init_cmd.add_argument("--start-year", type=int, default=1993)
     init_cmd.add_argument("--end-year", type=int, default=date.today().year)
 
+    snapshot_cmd = sub.add_parser("snapshot", help="validate CSV and export the static JSON snapshot (no network)")
+    snapshot_cmd.add_argument("--input", default=str(default_csv))
+    snapshot_cmd.add_argument("--output", default=str(base_dir / "data" / "marksix.json"))
+
     update_cmd = sub.add_parser("update", help="append new draws into CSV")
     update_cmd.add_argument("--output", default=str(default_csv))
 
@@ -422,6 +477,14 @@ def main():
         path = Path(args.output)
         appended = update_csv(path)
         print(f"Appended {appended} rows.")
+        return 0
+    if args.command == "snapshot":
+        try:
+            total = export_snapshot(Path(args.input), Path(args.output))
+        except (ValueError, OSError) as exc:
+            print(f"Snapshot not written: {exc}", file=sys.stderr)
+            return 1
+        print(f"Exported {total} validated draws to {args.output} (no live fetch).")
         return 0
     if args.command == "serve":
         path = Path(args.output)
