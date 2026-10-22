@@ -1,9 +1,8 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
 const STATIC_API = "data/marksix.json";
-const LOCAL_IMPORT_API = "http://127.0.0.1:5177/api/marksix/import";
 const AUTO_SYNC_LATEST = 100;
-const AUTO_SYNC_INTERVAL_HOURS = 24;
+const DRAW_DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\+08:00|T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2}))?$/;
 
 const DRAW_FRAGMENT = `fragment lotteryDrawsFragment on LotteryDraw {
     id
@@ -65,6 +64,8 @@ const els = {
   numberBoard: document.getElementById("numberBoard"),
   boardHint: document.getElementById("boardHint"),
   comboCount: document.getElementById("comboCount"),
+  countExact: document.getElementById("countExact"),
+  cancelCount: document.getElementById("cancelCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
   rowLimit: document.getElementById("rowLimit"),
@@ -131,6 +132,7 @@ const els = {
   danList: document.getElementById("danList"),
   danStatus: document.getElementById("danStatus"),
   danReason: document.getElementById("danReason"),
+  danWindow: document.getElementById("danWindow"),
   danPreview: document.getElementById("danPreview"),
   includeList: document.getElementById("includeList"),
   includeStatus: document.getElementById("includeStatus"),
@@ -210,42 +212,49 @@ function formatPrizeZh(num) {
 }
 
 function formatDateDmy(dateStr) {
-  const dt = new Date(normalizeDateString(dateStr));
-  if (Number.isNaN(dt.getTime())) return "-";
-  const day = String(dt.getDate()).padStart(2, "0");
-  const month = String(dt.getMonth() + 1).padStart(2, "0");
-  const year = dt.getFullYear();
+  const calendar = parseDrawDate(dateStr);
+  if (!calendar) return "-";
+  const [year, month, day] = calendar.split("-");
   return `${day}/${month}/${year}`;
 }
 
 function formatWeekday(dateStr) {
-  const dt = new Date(normalizeDateString(dateStr));
-  if (Number.isNaN(dt.getTime())) return "";
+  const calendar = parseDrawDate(dateStr);
+  if (!calendar) return "";
+  const dt = new Date(`${calendar}T00:00:00Z`);
   const names = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-  return names[dt.getDay()];
+  return names[dt.getUTCDay()];
 }
 
 function formatTime(dateStr) {
+  if (!parseDrawDate(dateStr) || !dateStr.includes("T")) return "-";
   const dt = new Date(normalizeDateString(dateStr));
   if (Number.isNaN(dt.getTime())) return "-";
-  const hh = String(dt.getHours()).padStart(2, "0");
-  const mm = String(dt.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Hong_Kong", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(dt);
 }
 
 function normalizeDateString(dateStr) {
-  if (!dateStr) return "";
-  if (dateStr.includes("T")) return dateStr;
-  const dateOnlyWithOffset = /^(\d{4}-\d{2}-\d{2})\+(\d{2}:\d{2})$/;
-  if (dateOnlyWithOffset.test(dateStr)) {
-    const [, datePart, offset] = dateStr.match(dateOnlyWithOffset);
-    return `${datePart}T00:00:00+${offset}`;
+  if (!parseDrawDate(dateStr)) return "";
+  return dateStr.includes("T") ? dateStr : `${dateStr.slice(0, 10)}T00:00:00+08:00`;
+}
+
+function parseDrawDate(value) {
+  if (typeof value !== "string" || value.trim() !== value || !DRAW_DATE_PATTERN.test(value)) return null;
+  const day = value.slice(0, 10);
+  const dt = new Date(`${day}T00:00:00Z`);
+  if (!Number.isFinite(dt.getTime()) || dt.getUTCFullYear() < 1 || dt.toISOString().slice(0, 10) !== day) return null;
+  if (value.includes("T")) {
+    const clock = value.slice(11).match(/^([0-9]{2}):([0-9]{2}):([0-9]{2})/);
+    const offset = value.match(/[+-]([0-9]{2}):([0-9]{2})$/);
+    if (+clock[1] > 23 || +clock[2] > 59 || +clock[3] > 59 || (offset && (+offset[1] > 23 || +offset[2] > 59)) || !Number.isFinite(new Date(value).getTime())) return null;
   }
-  if (/^\d{4}-\d{2}-\d{2}\+\d{2}:\d{2}/.test(dateStr)) {
-    const [datePart, offset] = dateStr.split("+");
-    return `${datePart}T00:00:00+${offset}`;
-  }
-  return dateStr;
+  return day;
+}
+
+function hongKongToday(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const part = name => parts.find(item => item.type === name).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 function formatDrawNo(draw) {
@@ -432,7 +441,8 @@ function pickNextDraw(draws) {
         new Date(normalizeDateString(b.closeDate || b.drawDate || ""))
     );
   if (upcoming.length) return upcoming[0];
-  return draws.find((draw) => draw.status !== "Result") || draws[0];
+  return draws.filter((draw) => draw.status === "Result")
+    .sort((a, b) => String(b.drawDate).localeCompare(String(a.drawDate)))[0] || null;
 }
 
 async function fetchLatestInfo() {
@@ -486,18 +496,6 @@ async function requestDraws(variables) {
   return data.data?.lotteryDraws || [];
 }
 
-async function postLocalImport(draws) {
-  const res = await fetch(LOCAL_IMPORT_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draws })
-  });
-  if (!res.ok) {
-    throw new Error(`本地匯入失敗 (${res.status})`);
-  }
-  return res.json();
-}
-
 function setSyncStatus(message) {
   if (!els.syncStatus) return;
   els.syncStatus.textContent = message;
@@ -527,34 +525,12 @@ async function syncAllDraws() {
   setSyncDisabled(true);
   setSyncProgress(0);
   try {
-    const startYear = 1993;
-    const endYear = new Date().getFullYear();
-    let appendedTotal = 0;
-    const totalYears = endYear - startYear + 1;
-    for (let year = startYear; year <= endYear; year += 1) {
-      setSyncStatus(`同步中…${year}`);
-      const progress = ((year - startYear) / totalYears) * 100;
-      setSyncProgress(progress);
-      const start = `${year}0101`;
-      const end = `${year}1231`;
-      const draws = await requestDraws({
-        lastNDraw: null,
-        startDate: start,
-        endDate: end,
-        drawType: "All"
-      });
-      const resultDraws = filterResultDraws(draws);
-      if (resultDraws.length) {
-        const res = await postLocalImport(resultDraws);
-        appendedTotal += res.appended || 0;
-      }
-    }
-    setSyncStatus(`同步完成，新增 ${appendedTotal} 期`);
+    await fetchAnalysisData();
+    setSyncStatus(state.analysisDraws.length ? "已重讀歷史資料；CSV 更新請使用 CLI。" : "本地 CSV 及隨附快照均未能載入。");
     setSyncProgress(100);
-    fetchAnalysisData();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    setSyncStatus(`${msg} ➜ ✨ 同步失敗，請確認本地服務已開。`);
+    setSyncStatus(`歷史資料讀取失敗：${msg}`);
   } finally {
     isSyncing = false;
     setSyncDisabled(false);
@@ -562,49 +538,57 @@ async function syncAllDraws() {
 }
 
 async function syncLatestDraws(targetCount = AUTO_SYNC_LATEST) {
+  if (!Number.isInteger(targetCount) || targetCount < 1 || targetCount > 100) {
+    setSyncStatus("期數必須係 1–100 嘅整數。");
+    return;
+  }
   if (isSyncing) return;
   isSyncing = true;
   setSyncDisabled(true);
   setSyncProgress(0);
   try {
-    setSyncStatus(`同步最新 ${targetCount} 期…`);
+    setSyncStatus(`從公開端點載入最近 ${targetCount} 期（只限本頁）…`);
     const draws = await requestDraws({
       lastNDraw: targetCount,
       startDate: null,
       endDate: null,
       drawType: "All"
     });
-    const resultDraws = filterResultDraws(draws);
-    const res = await postLocalImport(resultDraws);
-    setSyncStatus(`同步完成，新增 ${res.appended || 0} 期`);
+    const resultDraws = filterResultDraws(draws).map(normalizeHistoryDraw)
+      .map(draw => ({ ...draw, numbers: draw.drawResult.drawnNo, special: draw.drawResult.xDrawnNo }));
+    state.analysisDraws = readAnalysisPayload({ draws: resultDraws });
+    state.analysisSource = "session";
+    state.analysisMetadata = { fetchedAt: new Date().toISOString() };
+    invalidateSuggestions();
+    updateAnalysisView();
+    updateRepeatInfo();
+    renderAnalysisMetadata();
+    setSyncStatus(`本頁已載入 ${resultDraws.length} 期；未寫入 CSV 或網站快照，未獨立對帳官方結果。`);
     setSyncProgress(100);
-    fetchAnalysisData();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    setSyncStatus(`${msg} ➜ ✨ 同步失敗，請確認本地服務已開。`);
+    setSyncStatus(`公開資料載入失敗：${msg}；現有歷史分析保留。`);
   } finally {
     isSyncing = false;
     setSyncDisabled(false);
   }
 }
 
-function scheduleAutoSync() {
-  syncLatestDraws(AUTO_SYNC_LATEST);
-  const intervalMs = AUTO_SYNC_INTERVAL_HOURS * 60 * 60 * 1000;
-  setInterval(() => {
-    syncLatestDraws(AUTO_SYNC_LATEST);
-  }, intervalMs);
+function normalizeApiInteger(value) {
+  if (typeof value !== "number" && !(typeof value === "string" && /^[0-9]+$/.test(value))) return NaN;
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : NaN;
 }
 
 function normalizeHistoryDraw(draw) {
   return {
     ...draw,
-    year: Number(draw.year),
-    no: Number(draw.no),
+    year: normalizeApiInteger(draw.year),
+    no: normalizeApiInteger(draw.no),
     drawResult: {
       ...draw.drawResult,
-      drawnNo: Array.isArray(draw.drawResult?.drawnNo) ? draw.drawResult.drawnNo.map(Number) : [],
-      xDrawnNo: Number(draw.drawResult?.xDrawnNo)
+      drawnNo: Array.isArray(draw.drawResult?.drawnNo) ? draw.drawResult.drawnNo.map(normalizeApiInteger) : [],
+      xDrawnNo: normalizeApiInteger(draw.drawResult?.xDrawnNo)
     }
   };
 }
@@ -668,13 +652,6 @@ function renderDraws() {
     const dateText = formatDateDmy(drawDate);
     const weekday = formatWeekday(drawDate);
     const closeTime = formatTime(closeDate);
-    const investment =
-      latest.lotteryPool?.totalInvestment ||
-      latest.lotteryPool?.jackpot ||
-      latest.lotteryPool?.derivedFirstPrizeDiv ||
-      "-";
-    const formattedInvestment = formatNumber(investment);
-    const zhInvestment = formatPrizeZh(investment);
     const snowballParts = [];
     if (latest.snowballCode) snowballParts.push(latest.snowballCode);
     if (latest.snowballName_ch) snowballParts.push(latest.snowballName_ch);
@@ -682,12 +659,22 @@ function renderDraws() {
     const drawNo = formatDrawNo(latest);
     const dateLine = weekday ? `${dateText} (${weekday})` : dateText;
 
-    els.heroJackpot.innerHTML = `
-      <span>金多寶攪珠期數 ${drawNo}${snowballText}</span>
-      <span>攪珠日期 ${dateLine}</span>
-      <span>截止售票時間 ${closeTime}</span>
-      <span>投注額 $${formattedInvestment}（${zhInvestment}）</span>
-    `;
+    const completed = latest.status === "Result";
+    const lines = [
+      `${completed ? "已完成" : "即將攪珠"}｜${snowballParts.length ? "金多寶" : "普通"}攪珠期數 ${drawNo}${snowballText}`,
+      `攪珠日期 ${dateLine}（香港日期）`,
+      `${completed ? "當期" : ""}截止售票時間 ${closeTime}（香港時間）`
+    ];
+    for (const [field, label] of [["totalInvestment", "投注額"], ["jackpot", "多寶金額"], ["estimatedPrize", "估計頭獎"], ["derivedFirstPrizeDiv", "頭獎派彩參考"]]) {
+      const amount = parseNumber(latest.lotteryPool?.[field]);
+      if (amount !== null && amount >= 0) lines.push(`${label} $${formatNumber(amount)}`);
+    }
+    els.heroJackpot.innerHTML = "";
+    lines.forEach(line => {
+      const span = document.createElement("span");
+      span.textContent = line;
+      els.heroJackpot.appendChild(span);
+    });
   }
 }
 
@@ -1001,12 +988,33 @@ function updateRepeatInfo() {
         } else {
           const value = rate[key] * 100;
           cell.textContent = `${value.toFixed(1)}%`;
-          cell.classList.toggle("repeat-high", value >= 80);
+          cell.classList.remove("repeat-high");
         }
       }
     });
   });
-  if (status) status.textContent = `已載入${state.analysisSource === "local" ? "本地 CSV" : "隨附快照"}；歷史比例只描述過往，唔代表下一期機會。`;
+  if (status) status.textContent = `${analysisSourceName()}；各欄有效比較期數（分母）N=1–5：${rates.map(rate => rate?.total ?? 0).join("／")}。兩邊均包括主號碼及特別號碼；混合不同號碼池年代，只描述過往，唔代表下一期機會。`;
+}
+
+function analysisSourceName() {
+  return { local: "本地 CSV", snapshot: "隨附歷史快照", session: "公開端點（本頁樣本）" }[state.analysisSource] || "歷史樣本";
+}
+
+function invalidateSuggestions() {
+  const hadSuggestion = state.suggested.size > 0;
+  state.suggested.clear();
+  if (els.danList) els.danList.innerHTML = "";
+  if (els.danReason) els.danReason.textContent = hadSuggestion ? "分析視窗已更改；既有膽號保留，可重新揀膽。" : "";
+  renderNumberBoard();
+}
+
+function analysisWindow() {
+  return getRecentAnalysisDraws(parseNumber(els.analysisN?.value) || 20).filter(isValidAnalysisDraw);
+}
+
+function describeAnalysisWindow(window = analysisWindow()) {
+  if (!window.length) return "未有有效歷史分析視窗，暫停自動揀膽。";
+  return `${analysisSourceName()}｜實際 ${window.length} 期：${window.at(-1).drawDate.slice(0, 10)} 至 ${window[0].drawDate.slice(0, 10)}（只計主號碼；未獨立對帳，唔保證係最新資料；無預測優勢）`;
 }
 
 function getRecentAnalysisDraws(count) {
@@ -1066,9 +1074,24 @@ function pickDanNumbers() {
     return;
   }
 
-  const hotCounts = computeHotCounts(state.analysisDraws, parseNumber(els.analysisN?.value) || 20);
+  const window = analysisWindow();
+  if (!window.length) {
+    state.suggested.clear();
+    els.danList.innerHTML = "";
+    els.danStatus.textContent = "未有有效歷史分析視窗，暫停自動揀膽。";
+    renderNumberBoard();
+    return;
+  }
+  const hotCounts = computeHotCounts(window, window.length);
   const scored = candidates.map((num) => ({ num, count: hotCounts.get(num) || 0 }));
   scored.sort((a, b) => b.count - a.count || a.num - b.num);
+  if (scored[0].count === scored.at(-1).count) {
+    state.suggested.clear();
+    els.danList.innerHTML = "";
+    els.danStatus.textContent = "候選號碼出現次數相同，無熱冷分別；請手選膽號。";
+    renderNumberBoard();
+    return;
+  }
   const hot = scored.slice(0, 3).map((item) => item.num);
   const cold = scored.slice(-3).map((item) => item.num);
 
@@ -1076,10 +1099,11 @@ function pickDanNumbers() {
   const sameColor = (a, b) => getColorClass(a) === getColorClass(b);
   const sameSize = (a, b) => (a <= 24) === (b <= 24);
 
-  const tryPairs = (listA, listB, rules, reason) => {
+  const tryPairs = (listA, listB, rules, reason, requireDifference = false) => {
     for (const a of listA) {
       for (const b of listB) {
         if (a === b) continue;
+        if (requireDifference && (hotCounts.get(a) || 0) <= (hotCounts.get(b) || 0)) continue;
         if (rules.noConsecutive && isConsecutive(a, b)) continue;
         if (rules.diffColor && sameColor(a, b)) continue;
         if (rules.diffSize && sameSize(a, b)) continue;
@@ -1102,7 +1126,7 @@ function pickDanNumbers() {
   let chosen = null;
   let reason = "";
   for (const rules of rulesets) {
-    const picked = tryPairs(hot, cold, rules, "熱 + 冷（過去 N 期）");
+    const picked = tryPairs(hot, cold, rules, "樣本內較多 + 較少出現", true);
     if (picked) {
       chosen = picked.pair;
       reason = picked.reason;
@@ -1129,7 +1153,7 @@ function pickDanNumbers() {
 
   state.suggested = new Set(chosen);
   renderBallList(els.danList, chosen);
-  els.danStatus.textContent = `已根據畫面上最近 ${historyCount} 期建議 2 個膽。`;
+  els.danStatus.textContent = `候選來自畫面所選 ${historyCount} 期；按另列歷史視窗整理 2 個膽，無預測優勢。`;
   if (state.historyMode === "include") {
     state.included = new Set(chosen);
     state.dragged = new Set([...state.dragged].filter((n) => !state.included.has(n)));
@@ -1140,11 +1164,11 @@ function pickDanNumbers() {
     const detail = chosen
       .map((num) => {
         const tag = `${getColorClass(num)}｜${num <= 24 ? "細" : "大"}`;
-        return `${pad2(num)}（${tag}）`;
+        return `${pad2(num)}（樣本出現 ${hotCounts.get(num) || 0} 次；${tag}）`;
       })
       .join("、");
     const consecutive = Math.abs(chosen[0] - chosen[1]) === 1 ? "有連號" : "無連號";
-    els.danReason.textContent = `原因：${reason}，${detail}，${consecutive}`;
+    els.danReason.textContent = `規則：${reason}，${detail}，${consecutive}。${describeAnalysisWindow(window)}`;
   }
   renderNumberBoard();
   autoUpdate();
@@ -1288,6 +1312,7 @@ function updateConsecutiveList(pool) {
 }
 
 function updateAnalysisView() {
+  if (els.danWindow) els.danWindow.textContent = describeAnalysisWindow();
   if (!els.analysisCold || !els.analysisHot || !els.analysisCounts) return;
   if (!state.analysisDraws.length) {
     renderEmptyMessage(els.analysisCold, "未有資料");
@@ -1342,20 +1367,17 @@ function updateAnalysisView() {
   }
 
   if (els.analysisStatus) {
-    els.analysisStatus.textContent = `已載入 ${state.analysisDraws.length} 期｜最近 ${slice.length} 期`;
+    els.analysisStatus.textContent = `已載入 ${state.analysisDraws.length} 期｜${describeAnalysisWindow(slice)}`;
   }
 }
 
 function isValidAnalysisDraw(draw) {
-  if (!draw || !Number.isInteger(draw.year) || draw.year <= 0 || !Number.isInteger(draw.no) || draw.no <= 0 || draw.status !== "Result" || !Array.isArray(draw.numbers) || draw.numbers.length !== 6) return false;
+  if (!draw || !Number.isSafeInteger(draw.year) || draw.year <= 0 || !Number.isSafeInteger(draw.no) || draw.no <= 0 || draw.status !== "Result" || !Array.isArray(draw.numbers) || draw.numbers.length !== 6) return false;
   const numbers = [...draw.numbers, draw.special];
+  const day = parseDrawDate(draw.drawDate);
   return numbers.every((n) => Number.isInteger(n) && n >= 1 && n <= 49)
     && new Set(numbers).size === 7
-    && typeof draw.drawDate === "string"
-    && /^\d{4}-\d{2}-\d{2}/.test(draw.drawDate)
-    && Number.isFinite(new Date(normalizeDateString(draw.drawDate)).getTime())
-    && Number.isFinite(new Date(`${draw.drawDate.slice(0, 10)}T00:00:00Z`).getTime())
-    && new Date(`${draw.drawDate.slice(0, 10)}T00:00:00Z`).toISOString().slice(0, 10) === draw.drawDate.slice(0, 10);
+    && day !== null && Number(day.slice(0, 4)) === draw.year && day <= hongKongToday();
 }
 
 function readAnalysisPayload(data) {
@@ -1380,14 +1402,14 @@ function renderAnalysisMetadata(now = new Date()) {
     new Date(normalizeDateString(b.drawDate)) - new Date(normalizeDateString(a.drawDate)))[0];
   const cutoff = latest.drawDate.slice(0, 10);
   const age = Math.floor((now - new Date(normalizeDateString(latest.drawDate))) / 86400000);
-  const source = state.analysisSource === "local" ? "本地 CSV" : "隨附歷史快照";
+  const source = analysisSourceName();
   // Request/serving time and CSV modification time are not acquisition timestamps.
   const fetchedAt = state.analysisMetadata?.fetchedAt;
   const acquisition = fetchedAt && Number.isFinite(new Date(fetchedAt).getTime())
     ? `取數時間：${fetchedAt}` : "取數時間未記錄";
   const stale = age > 7 ? `｜最後一期距今 ${age} 日，請核對有冇更新` : "";
   const fallback = state.analysisMetadata?.fallback ? "｜本地資料未可用，已改用快照" : "";
-  els.analysisMeta.textContent = `資料：${source}｜截至 ${cutoff}｜${acquisition}${stale}${fallback}；未即時核對官方最新結果。`;
+  els.analysisMeta.textContent = `資料：${source}｜截至 ${cutoff}｜${acquisition}${stale}${fallback}；原始來源未獨立核實，未即時核對官方最新結果。`;
 }
 
 async function fetchWithTimeout(url, options = {}) {
@@ -1422,6 +1444,7 @@ async function fetchAnalysisData() {
     state.analysisDraws = draws;
     state.analysisSource = source;
     state.analysisMetadata = { fetchedAt: data.fetchedAt || null, fallback: source === "snapshot" };
+    invalidateSuggestions();
     updateAnalysisView();
     updateRepeatInfo();
     renderAnalysisMetadata();
@@ -1429,6 +1452,7 @@ async function fetchAnalysisData() {
     state.analysisDraws = [];
     state.analysisSource = null;
     state.analysisMetadata = null;
+    invalidateSuggestions();
     els.analysisStatus.textContent = "歷史資料載入失敗";
     updateAnalysisView();
     updateRepeatInfo();
@@ -2014,6 +2038,7 @@ async function countCombinations(pool, filters, required, token) {
 
       iterations += 1;
       if (iterations % 2000 === 0) {
+        if (iterations % 20000 === 0) setComboCount(`可組合：計算中…已檢查 ${iterations.toLocaleString("en-US")} 個分支，可取消`);
         await new Promise((resolve) => setTimeout(resolve, 0));
         if (state.countToken !== token) return 0;
       }
@@ -2248,16 +2273,17 @@ els.lastN.addEventListener("change", () => {
 });
 
 if (els.analysisN) {
-  els.analysisN.addEventListener("change", updateAnalysisView);
+  els.analysisN.addEventListener("change", () => {
+    invalidateSuggestions();
+    updateAnalysisView();
+  });
 }
 
 if (els.syncAll) {
   els.syncAll.addEventListener("click", syncAllDraws);
 }
 
-if (els.syncLatest) {
-  els.syncLatest.addEventListener("click", syncLatestDraws);
-}
+if (els.syncLatest) els.syncLatest.addEventListener("click", () => syncLatestDraws());
 
 if (els.pickDan) {
   els.pickDan.addEventListener("click", pickDanNumbers);
@@ -2383,8 +2409,31 @@ function handleExcludeChange() {
 let autoTimer = null;
 let countTimer = null;
 
+function setCountRunning(running) {
+  if (els.countExact) els.countExact.disabled = running;
+  if (els.cancelCount) els.cancelCount.hidden = !running;
+}
+
+function cancelComboCount() {
+  clearTimeout(countTimer);
+  state.countToken += 1;
+  setCountRunning(false);
+  setComboCount("可組合：未計算（按「精確計算」）");
+}
+
+if (els.cancelCount) els.cancelCount.addEventListener("click", cancelComboCount);
+if (els.countExact) els.countExact.addEventListener("click", () => {
+  const filters = readFilters();
+  let pool = getFilteredPool(filters);
+  if (state.historyMode === "include" && state.dragged.size) {
+    pool = pool.filter(n => state.dragged.has(n) || state.included.has(n));
+  }
+  scheduleComboCount(filters, pool, buildFilterKey(filters, pool));
+});
+
 function scheduleComboCount(filters, pool, key) {
   clearTimeout(countTimer);
+  setCountRunning(true);
   countTimer = setTimeout(async () => {
     const token = state.countToken + 1;
     state.countToken = token;
@@ -2395,6 +2444,7 @@ function scheduleComboCount(filters, pool, key) {
     if (comboKey === state.lastComboKey && state.lastComboCount !== null) {
       setComboCount(`可組合：${state.lastComboCount.toLocaleString("en-US")}`);
       applyCombinationCount(state.lastComboCount, activeFilters, activePool, comboKey);
+      setCountRunning(false);
       return;
     }
     setComboCount("可組合：計算中…");
@@ -2404,6 +2454,7 @@ function scheduleComboCount(filters, pool, key) {
     state.lastComboCount = count;
     setComboCount(`可組合：${count.toLocaleString("en-US")}`);
     applyCombinationCount(count, activeFilters, activePool, comboKey);
+    setCountRunning(false);
   }, 200);
 }
 
@@ -2448,6 +2499,7 @@ function autoUpdate(forceGenerate = false) {
   clearTimeout(autoTimer);
   clearTimeout(countTimer);
   state.countToken += 1;
+  setCountRunning(false);
   autoTimer = setTimeout(() => {
     updateSumRangeUI();
     updateAvailableCount();
@@ -2477,7 +2529,14 @@ function autoUpdate(forceGenerate = false) {
       renderResults(sets);
       state.lastGeneratedKey = generationKey;
     }
-    scheduleComboCount(filters, pool, key);
+    if (state.lastComboKey === key && state.lastComboCount !== null) {
+      setComboCount(`可組合：${state.lastComboCount.toLocaleString("en-US")}`);
+      applyCombinationCount(state.lastComboCount, filters, pool, key);
+    } else if (Number.isFinite(state.generationReport?.available) && state.generationReport.countKey === key) {
+      setComboCount(`可組合：${state.generationReport.available.toLocaleString("en-US")}`);
+    } else {
+      setComboCount("可組合：未計算（按「精確計算」；較大號碼池可能需時）");
+    }
   }, 250);
 }
 
@@ -2596,4 +2655,3 @@ updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
 fetchAnalysisData();
-scheduleAutoSync();

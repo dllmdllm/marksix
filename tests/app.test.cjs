@@ -39,7 +39,7 @@ function harness() {
   run(`globalThis.base = { sumMin:null,sumMax:null,oddCount:null,evenCount:null,smallCount:null,bigCount:null,maxConsecutive:6,maxTail:null,rowLimit:[],rowLimitSet:null,colorCounts:{red:null,blue:null,green:null},elementCounts:{metal:null,wood:null,water:null,fire:null,earth:null} };`);
   return { ctx, node, run, async flush(delay) { const selected = [...jobs].filter(([, job]) => job.delay === delay); for (const [id, job] of selected) { jobs.delete(id); await job.fn(); } }, jobs };
 }
-const draw = (date = '2026-01-03', numbers = [1,2,3,4,5,6], special = 7) => ({ year:2026, no:Number(date.slice(8,10)) || 1, status:'Result', drawDate:date, numbers, special });
+const draw = (date = '2026-01-03', numbers = [1,2,3,4,5,6], special = 7) => ({ year:Number(date.slice(0,4)), no:Number(date.slice(8,10)) || 1, status:'Result', drawDate:date, numbers, special });
 function setDraws(h, draws, variable = 'state.analysisDraws') { h.run(`${variable} = ${JSON.stringify(draws)}`); }
 function raw(d) { return { ...d, drawResult: { drawnNo:d.numbers, xDrawnNo:d.special } }; }
 
@@ -115,7 +115,7 @@ test('partial sampling warnings survive rendering', async () => {
 test('automatic bankers use exactly the visible one-period history and recalculate', () => {
   const h = harness(); h.node('lastN').value='1';
   const visible=draw('2026-01-03',[25,26,27,28,29,30],31);
-  setDraws(h,[raw(visible)],'state.draws'); setDraws(h,[draw('1993-01-05')]);
+  setDraws(h,[raw(visible)],'state.draws'); setDraws(h,[draw('1993-01-05',[25,1,2,3,4,5],6)]);
   h.run('state.historyMode="include";globalThis.updates=0;autoUpdate=()=>{updates++};pickDanNumbers()');
   const bankers=Array.from(h.run('[...state.included]'));
   assert.equal(bankers.length,2); assert.ok(bankers.every(n=>[...visible.numbers,visible.special].includes(n)));
@@ -266,4 +266,80 @@ test('exact zero-count updates explain combined failure without claiming one arb
   const h=harness();h.run('state.generationReport={countKey:"test",requested:10,produced:0,available:null};applyCombinationCount(0,base,[1,2,3,4,5,6],"test")');
   assert.match(h.node('generateStatus').textContent,/完整計算/);assert.match(h.node('generateStatus').textContent,/所有條件合併/);
   assert.match(h.node('generationSummary').textContent,/有效組合 0/);
+});
+
+test('strict calendar grammar is shared with the Python pipeline', () => {
+  const h=harness();
+  for (const item of JSON.parse(fs.readFileSync(path.join(root,'tests/date-cases.json'),'utf8'))) {
+    assert.equal(h.run(`parseDrawDate(${JSON.stringify(item.value)})`),item.date,JSON.stringify(item.value));
+  }
+  for (const bad of [{...draw(),year:2099},draw('2099-01-03')]) {
+    assert.equal(h.run(`isValidAnalysisDraw(${JSON.stringify(bad)})`),false);
+  }
+  const malformed=raw(draw());malformed.drawResult.drawnNo[0]=true;
+  h.ctx.malformed=malformed;
+  assert.equal(h.run('const d=normalizeHistoryDraw(malformed);isValidAnalysisDraw({...d,numbers:d.drawResult.drawnNo,special:d.drawResult.xDrawnNo})'),false);
+});
+test('draw calendar and closing clock remain Hong Kong across viewer timezones', () => {
+  const prior=process.env.TZ;
+  try {
+    for (const zone of ['Asia/Hong_Kong','UTC','Europe/London','America/Los_Angeles']) {
+      process.env.TZ=zone;const h=harness();
+      assert.equal(h.run('formatDateDmy("2026-10-22+08:00")'),'22/10/2026',zone);
+      assert.equal(h.run('formatWeekday("2026-10-22+08:00")'),'星期四',zone);
+      for (const stamp of ['2026-10-22T21:15:00+08:00','2025-12-31T21:15:00+08:00','2026-03-08T21:15:00+08:00','2026-11-01T21:15:00+08:00']) {
+        assert.equal(h.run(`formatTime(${JSON.stringify(stamp)})`),'21:15',zone);
+      }
+      assert.equal(h.run('formatTime("2026-01-03")'),'-');
+    }
+  } finally { if(prior===undefined)delete process.env.TZ;else process.env.TZ=prior; }
+});
+test('real manual click sends an integer count and never writes to a local service', async () => {
+  const h=harness(),calls=[];
+  h.ctx.fetch=async(url,options)=>{calls.push({url,...JSON.parse(options.body)});return {ok:true,json:async()=>({data:{lotteryDraws:[raw(draw())]}})};};
+  await h.node('syncLatest').listeners.click[0]({type:'click',target:h.node('syncLatest')});
+  assert.equal(calls.length,1);assert.equal(calls[0].variables.lastNDraw,100);
+  assert.match(calls[0].url,/info.cld.hkjc.com/);assert.equal(h.run('state.analysisSource'),'session');
+  assert.match(h.node('syncStatus').textContent,/未寫入 CSV/);
+  for (const value of ['{}','"100"','0','1.5','101']) await h.run(`syncLatestDraws(${value})`);
+  assert.equal(calls.length,1);
+});
+test('upstream sync failures preserve the analysis and identify the public source',async()=>{
+  const h=harness();setDraws(h,[draw()]);
+  h.ctx.fetch=async()=>({ok:true,json:async()=>({errors:[{message:'GraphQL Int rejected'}]})});
+  await h.run('syncLatestDraws()');
+  assert.equal(h.run('state.analysisDraws.length'),1);assert.match(h.node('syncStatus').textContent,/公開資料載入失敗.*GraphQL Int rejected/);
+  assert.doesNotMatch(h.node('syncStatus').textContent,/本地服務已開/);
+});
+test('hero preserves zero, separate monetary meanings and completed/ordinary/snowball states',()=>{
+  const h=harness();
+  const text=()=>h.node('heroJackpot').children.map(n=>n.textContent).join('\n');
+  const render=value=>h.run(`state.latestInfo=${JSON.stringify(value)};renderDraws()`);
+  const latest={...raw(draw()),closeDate:'2026-01-03T21:15:00+08:00',lotteryPool:{totalInvestment:0,jackpot:75000000,estimatedPrize:90000000}};
+  render(latest);assert.match(text(),/已完成｜普通/);assert.match(text(),/投注額 \$0\n/);assert.match(text(),/多寶金額 \$75,000,000/);assert.match(text(),/香港時間/);
+  render({...latest,status:'Selling',snowballCode:'SB',lotteryPool:{jackpot:75000000}});
+  assert.match(text(),/即將攪珠｜金多寶/);assert.doesNotMatch(text(),/投注額/);
+  h.ctx.completed=[raw(draw('2026-01-01')),raw(draw('2026-01-03'))];
+  assert.equal(h.run('pickNextDraw(completed).no'),3);
+  render({...latest,snowballName_ch:'<img src=x onerror=bad()>'});
+  assert.ok(h.node('heroJackpot').children.every(n=>n.innerHTML===''));
+});
+test('missing/equal frequency windows never fabricate hot-cold evidence',()=>{
+  const h=harness();h.node('lastN').value='1';setDraws(h,[raw(draw('2026-01-03',[25,26,27,28,29,30],31))],'state.draws');
+  h.run('pickDanNumbers()');assert.equal(h.run('state.suggested.size'),0);assert.match(h.node('danStatus').textContent,/未有有效/);
+  setDraws(h,[draw('1993-01-05')]);h.run('pickDanNumbers()');assert.equal(h.run('state.suggested.size'),0);assert.match(h.node('danStatus').textContent,/次數相同/);
+  setDraws(h,[draw('1993-01-05',[25,1,2,3,4,5],6)]);h.node('analysisN').value='100';
+  h.run('state.analysisSource="snapshot";autoUpdate=()=>{};updateAnalysisView();pickDanNumbers()');
+  assert.equal(h.run('state.suggested.size'),2);assert.match(h.node('danReason').textContent,/實際 1 期：1993-01-05 至 1993-01-05/);
+  assert.match(h.node('danReason').textContent,/出現 \d+ 次/);assert.match(h.node('danWindow').textContent,/隨附歷史快照/);
+});
+test('broad edits sample promptly without launching exhaustive counting; explicit count cancels safely',async()=>{
+  const h=generationHarness();h.run('getFilteredPool=()=>Array.from({length:49},(_,i)=>i+1);globalThis.calls=0;countCombinations=async()=>{calls++;return 42};autoUpdate()');
+  await h.flush(250);assert.equal(h.run('calls'),0);assert.equal(h.node('resultList').children.length,10);
+  assert.match(h.node('comboCount').textContent,/未計算/);assert.equal([...h.jobs.values()].filter(j=>j.delay===200).length,0);
+  h.node('countExact').emit('click');await h.flush(200);assert.equal(h.run('calls'),1);assert.match(h.node('comboCount').textContent,/42/);
+  let finish;h.ctx.pendingCount=new Promise(resolve=>finish=resolve);
+  h.run('state.lastComboKey=null;countCombinations=()=>pendingCount');h.node('countExact').emit('click');
+  const counting=h.flush(200);h.node('cancelCount').emit('click');finish(999);await counting;
+  assert.doesNotMatch(h.node('comboCount').textContent,/999/);assert.equal(h.run('state.lastComboCount'),42);assert.equal(h.node('cancelCount').hidden,true);
 });
