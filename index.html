@@ -2,7 +2,7 @@
 <html lang="zh-HK">
   <head>
     <meta charset="utf-8" />
-    <meta name="marksix-ui-version" content="workflow-ui-20261014" />
+    <meta name="marksix-ui-version" content="astra-fixes-20261022" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>六合彩號碼篩選器</title>
     <link rel="stylesheet" href="styles.css" />
@@ -15,7 +15,8 @@
         <p class="eyebrow">Mark Six Lab</p>
         <h1>六合彩號碼篩選器</h1>
         <div class="hero-details" id="heroJackpot">-</div>
-      </header><nav class="workspace-nav" aria-label="選號工作區"><div role="tablist" aria-label="選號與歷史分析" class="workspace-tabs"><button type="button" role="tab" id="chooseTab" aria-controls="chooseView" aria-selected="true" tabindex="0">1 揀號碼</button><button type="button" role="tab" id="filtersTab" aria-controls="filtersView" aria-selected="false" tabindex="-1">2 設條件</button><button type="button" role="tab" id="resultsTab" aria-controls="resultsView" aria-selected="false" tabindex="-1">3 睇結果</button><button type="button" role="tab" id="historyTab" aria-controls="historyView" aria-selected="false" tabindex="-1">歷史分析</button></div></nav><div class="workspace-context"><p id="workflowFeedback" class="workflow-feedback" role="status"></p><p id="workflowCount" class="workflow-count" aria-live="polite">可組合：計算中…</p><details class="data-context" id="dataContext"><summary id="dataSummary">資料來源及截止日期</summary><div><p id="analysisMeta" class="hint" role="status">歷史資料來源及截止日期載入中…</p><p class="hint">歷史冷熱及揀膽只供整理號碼，未經驗證可提高中獎機會。來源工具使用 <a href="https://info.cld.hkjc.com/graphql/base/" target="_blank" rel="noopener noreferrer">馬會公開資料端點</a>；隨附快照未即時對帳。</p></div></details><details class="panel active-summary progressive">
+        <p class="archive-notice">隨附資料係歷史封存：截至 2026-01-03；原始取數時間及來源未獨立核實。唔係目前排名，亦無預測或提高中獎機會嘅證據。</p>
+      </header><nav class="workspace-nav" aria-label="選號工作區"><div role="tablist" aria-label="選號與歷史分析" class="workspace-tabs"><button type="button" role="tab" id="chooseTab" aria-controls="chooseView" aria-selected="true" tabindex="0">1 揀號碼</button><button type="button" role="tab" id="filtersTab" aria-controls="filtersView" aria-selected="false" tabindex="-1">2 設條件</button><button type="button" role="tab" id="resultsTab" aria-controls="resultsView" aria-selected="false" tabindex="-1">3 睇結果</button><button type="button" role="tab" id="historyTab" aria-controls="historyView" aria-selected="false" tabindex="-1">歷史分析</button></div></nav><div class="workspace-context"><p id="workflowFeedback" class="workflow-feedback" role="status"></p><p id="workflowCount" class="workflow-count" aria-live="polite">可組合：未計算（可按需精確計算）</p><details class="data-context" id="dataContext"><summary id="dataSummary">資料來源及截止日期</summary><div><p id="analysisMeta" class="hint" role="status">歷史資料來源及截止日期載入中…</p><p class="hint">歷史冷熱及揀膽只供整理號碼，未經驗證可提高中獎機會。來源工具使用 <a href="https://info.cld.hkjc.com/graphql/base/" target="_blank" rel="noopener noreferrer">馬會公開資料端點</a>；隨附快照未即時對帳。</p></div></details><details class="panel active-summary progressive">
         <summary>生效條件與矛盾說明</summary>
         <p id="activeConditions" class="hint">條件載入中…</p>
         <p id="constraintStatus" class="hint" role="status"></p>
@@ -56,6 +57,7 @@
           <div id="includeList" class="ball-list"></div>
           <p id="includeStatus" class="hint" role="status">未選擇膽號。</p>
           <p id="danStatus" class="hint" role="status">請先載入至少 1 期歷史組合。</p>
+          <p id="danWindow" class="hint" role="status">歷史分析視窗載入中；暫停自動揀膽。</p>
           <p id="danReason" class="hint"></p>
         </div><div class="field line" id="dragSection">
           <h3>拖碼候選池（每組其餘號碼由此選取）</h3>
@@ -81,7 +83,7 @@
         </div><details class="field line" id="danPreview">
           <summary>自動揀膽說明與預覽</summary>
           <div id="danList" class="ball-list"></div>
-          <p class="hint">規則：熱 + 冷／避連號／分色／分大小</p>
+          <p class="hint">規則：按上列樣本次數配對／避連號／分色／分大小；無資料或同次數時請手選。</p>
         </details></section><div class="view-actions"><button type="button" class="ghost" data-view-target="filters">下一步：設條件</button></div></div><div id="filtersView" class="workspace-view" role="tabpanel" aria-labelledby="filtersTab" tabindex="-1" hidden><section class="panel filters"><h2>2. 設條件 <span class="pill" id="availableCount">（可用號碼：-）</span></h2><p class="hint">每項數量只選一個；未選即不限，0 表示該類不能出現。單雙及大小會互補更新，再點已選值可清除。</p><div class="field line">
           <label>單數 / 雙數</label>
           <div class="count-stack">
@@ -372,11 +374,13 @@
           <h3>生成結果</h3>
         </div>
         <p class="combo-count" id="comboCount" role="status">可組合：-</p>
+        <div class="inline"><button id="countExact" type="button" class="ghost-btn">精確計算</button><button id="cancelCount" type="button" class="ghost-btn" hidden>取消計算</button></div>
+        <p class="hint">改條件先產生小量樣本；完整計數只會按需啟動，較大號碼池可能需時。</p>
         <p id="generationSummary" class="hint" role="status">未生成。</p>
         <div id="resultList" class="result-list"></div>
       </section><div class="view-actions"><button type="button" class="ghost" data-view-target="filters">返回調整條件</button></div></div><div id="historyView" class="workspace-view" role="tabpanel" aria-labelledby="historyTab" tabindex="-1" hidden><p class="hint">歷史分析只描述過往，唔代表下期更易中；切換檢視唔會改動選號或條件。</p><section class="panel analysis">
         <div class="result-head">
-          <h2>冷 / 熱號碼分析</h2>
+          <h2>歷史樣本冷 / 熱分析</h2>
         </div>
         <div class="analysis-controls">
           <label for="analysisN">分析期數</label>
@@ -395,11 +399,11 @@
         
         <div class="analysis-grid">
           <div class="analysis-block">
-            <h3>未出現過</h3>
+            <h3>視窗內未出現</h3>
             <div id="analysisCold" class="ball-list"></div>
           </div>
           <div class="analysis-block">
-            <h3>最熱門</h3>
+            <h3>視窗內較常出現</h3>
             <div id="analysisHot" class="ball-list"></div>
           </div>
           <div class="analysis-block">
@@ -407,15 +411,15 @@
             <div id="analysisCounts" class="analysis-counts"></div>
           </div>
         </div>
-      <details class="maintenance progressive"><summary>更新本地資料（需要本機服務）</summary><div><div class="analysis-actions">
-          <button id="syncAll" class="ghost-btn">同步全部</button>
-          <button id="syncLatest" class="ghost-btn">同步最新</button>
-          <span id="syncStatus" class="hint">同步需要本機 Python 服務；唔會更新網站快照</span>
+      <details class="maintenance progressive"><summary>重新載入分析資料</summary><div><div class="analysis-actions">
+          <button id="syncAll" class="ghost-btn">重讀歷史資料</button>
+          <button id="syncLatest" class="ghost-btn">載入最近 100 期（本頁）</button>
+          <span id="syncStatus" class="hint">本機服務只供讀取。CSV 更新請用 CLI；本頁載入唔會寫入 CSV 或網站快照。</span>
         </div><div class="analysis-progress">
           <progress id="syncProgress" max="100" value="0"></progress>
           <span id="syncProgressText" class="hint">0%</span>
         </div></div></details></section><section class="panel"><div id="repeatInfo" class="repeat-info"><h3>歷史重覆比例</h3>
-          <p class="hint">歷史上，下一期（包括特別號碼）與之前 N 期號碼聯集嘅重覆比例；包含不同年代資料。</p>
+          <p class="hint">每期七個號碼（主號碼及特別號碼）與之前 N 期全部七個號碼聯集嘅重覆比例；混合不同號碼池年代。每欄分母係有效期數減 N，只描述過往，無預測優勢。</p>
           <div class="repeat-table" role="table" aria-label="與前一至五期號碼聯集的歷史重覆比例">
             <div class="repeat-row repeat-head" role="row">
               <div class="repeat-label" role="columnheader">號碼重覆</div>
@@ -492,7 +496,7 @@
           </div>
           <p class="hint repeat-status">載入歷史資料後先會顯示歷史比例。</p>
         </div></section><button type="button" class="ghost" id="returnToWorkflow">返回揀號流程</button></div><footer class="footnote">
-      </footer><aside id="mobileActions" class="mobile-actions" aria-label="快速生成"><span id="mobileComboCount">可組合：計算中…</span><button type="button" class="primary" id="mobileGenerate">再抽並睇結果</button></aside></main>
+      </footer><aside id="mobileActions" class="mobile-actions" aria-label="快速生成"><span id="mobileComboCount">可組合：未計算（可按需精確計算）</span><button type="button" class="primary" id="mobileGenerate">再抽並睇結果</button></aside></main>
 
     <script src="app.js"></script>
   <script src="ui.js"></script></body>
