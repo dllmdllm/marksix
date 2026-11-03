@@ -168,9 +168,9 @@ test('repeat rates count special-to-main overlaps in chronological order', () =>
 });
 test('snapshot is unchanged from the reviewed Git blob and passes basic integrity checks', () => {
   const bytes=fs.readFileSync(path.join(root,'data/marksix.json'));
-  assert.equal(crypto.createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),'32ac613fa9de5ec74573636341d66156124222a2');
-  const data=JSON.parse(bytes);const h=harness();h.ctx.payload=data;assert.equal(h.run('readAnalysisPayload(payload).length'),4289);
-  assert.equal(data.draws.at(-1).drawDate,'2026-01-03+08:00');
+  assert.equal(crypto.createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),'9fca8b33875e02297804509718563296e6ce4ecb');
+  const data=JSON.parse(bytes);const h=harness();h.ctx.payload=data;assert.equal(h.run('readAnalysisPayload(payload).length'),4404);
+  assert.equal(data.draws.at(-1).drawDate,'2026-10-31');
 });
 test('mobile source keeps sync actions visible and offers table overflow', () => {
   const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
