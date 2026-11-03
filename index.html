@@ -26,7 +26,11 @@
         <summary>生效條件與矛盾說明</summary>
         <p id="activeConditions" class="hint">條件載入中…</p>
         <p id="constraintStatus" class="hint" role="status"></p>
-      </details></div><div class="workspace-main"><div id="chooseView" class="workspace-view" role="tabpanel" aria-labelledby="chooseTab" tabindex="-1"><section class="panel controls"><h2>1. 揀號碼</h2><p class="hint">先揀模式及歷史期數，再選膽／拖。可隨時到其他檢視，設定會保留。</p><div class="field line">
+      </details><div class="pool-board">
+<p class="pool-board-title">候選號碼池（即時）</p>
+<div class="pool-grid" id="poolGrid" aria-label="候選號碼池即時狀態"></div>
+<p class="hint" id="poolBoardMeta"></p>
+</div></div><div class="workspace-main"><div id="chooseView" class="workspace-view" role="tabpanel" aria-labelledby="chooseTab" tabindex="-1"><section class="panel controls"><h2>1. 揀號碼</h2><p class="hint">先揀模式及歷史期數，再選膽／拖。可隨時到其他檢視，設定會保留。</p><div class="field line">
           <label for="lastN">歷史組合幾多期</label>
           <div class="inline">
             <select id="lastN">

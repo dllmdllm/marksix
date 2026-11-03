@@ -1012,3 +1012,9 @@ body {
 @media (min-width: 1024px) {
   .hero-details { grid-template-columns: 1fr 1fr; column-gap: 24px; }
 }
+
+.pool-board { margin-top: 14px; }
+.pool-board-title { font-weight: 700; margin: 0 0 6px; }
+.pool-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.pool-grid .ball { width: 100%; height: auto; aspect-ratio: 1; font-size: 0.82rem; transition: opacity 0.15s ease; }
+.pool-grid .ball.pool-off { opacity: 0.18; filter: grayscale(1); }

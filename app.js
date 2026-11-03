@@ -2502,6 +2502,27 @@ function cancelComboCount() {
 }
 
 if (els.cancelCount) els.cancelCount.addEventListener("click", cancelComboCount);
+const poolGrid = document.getElementById("poolGrid");
+const poolBoardMeta = document.getElementById("poolBoardMeta");
+const poolBalls = [];
+if (poolGrid) {
+  for (let n = 1; n <= 49; n += 1) {
+    const ball = document.createElement("span");
+    ball.className = `ball ${getColorClass(n)} pool-ball`;
+    ball.textContent = pad2(n);
+    poolGrid.appendChild(ball);
+    poolBalls.push(ball);
+  }
+}
+function renderPoolBoard(pool) {
+  if (!poolGrid) return;
+  const inPool = new Set(pool);
+  poolBalls.forEach((ball, idx) => {
+    ball.classList.toggle("pool-off", !inPool.has(idx + 1));
+  });
+  if (poolBoardMeta) poolBoardMeta.textContent = `池內 ${pool.length} 個著燈 · ${49 - pool.length} 個熄燈（俾條件或者歷史排除咗）`;
+}
+
 const railExactCount = document.getElementById("railExactCount");
 if (railExactCount && els.countExact) railExactCount.addEventListener("click", () => els.countExact.click());
 if (els.countExact) els.countExact.addEventListener("click", () => {
@@ -2611,6 +2632,7 @@ function autoUpdate(forceGenerate = false) {
     updateConsecutiveList(basePool);
     const key = buildFilterKey(filters, pool);
     renderActiveConditions(filters, pool);
+    renderPoolBoard(pool);
     const excludedKey = [...state.excluded].sort((a, b) => a - b).join(",");
     if (excludedKey !== state.lastExcludedKey) {
       renderCategoryLists();
