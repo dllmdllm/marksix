@@ -2543,7 +2543,8 @@ function renderActiveConditions(filters, pool) {
   const lines = [];
   const historyCount = parseNumber(els.lastN?.value) || 0;
   if (state.historyMode === "exclude") {
-    lines.push(`模式：排除歷史號碼；所選 ${historyCount} 期／已載入 ${state.draws.length} 期，主號碼及特別號碼共排除 ${state.excluded.size} 個`);
+    lines.push("模式：排除歷史號碼");
+    lines.push(`所選 ${historyCount} 期／已載入 ${state.draws.length} 期，主號碼及特別號碼共排除 ${state.excluded.size} 個`);
   } else {
     const bankers = normalizePool([...state.included]);
     const validDrags = [...state.dragged].filter((n) => pool.includes(n));
@@ -2570,7 +2571,7 @@ function renderActiveConditions(filters, pool) {
   if (filters.maxConsecutive < 6) lines.push(`最多連續 ${filters.maxConsecutive} 個`);
   if (filters.maxTail !== null) lines.push(`同一尾數最多 ${filters.maxTail} 個`);
   if (filters.rowLimit?.length) lines.push(`只用號碼區間：${filters.rowLimit.map((row) => ["", "01–10", "11–20", "21–30", "31–40", "41–49"][row]).join("、")}`);
-  els.activeConditions.textContent = lines.join("；");
+  els.activeConditions.textContent = lines.join("\n");
   const feasibility = checkFeasibility(filters, pool);
   if (els.constraintStatus) els.constraintStatus.textContent = feasibility.ok ? "單項及基本交互檢查通過；最終以精確組合數為準。" : feasibility.message;
 }
