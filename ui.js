@@ -147,7 +147,7 @@
       if (!advanced || !summary) return;
       const selected = advanced.querySelectorAll("input:checked").length
         + [...advanced.querySelectorAll("select")].filter((select) => select.value !== "").length;
-      summary.textContent = `進階條件：顏色、連號、同尾、區間及五行${selected ? `（已選 ${selected} 項）` : "（未選）"}`;
+      summary.textContent = `進階條件：顏色、連號、同尾及區間${selected ? `（已選 ${selected} 項）` : "（未選）"}`;
     }
     const sync = () => { syncCount(); syncData(); syncFeedback(); syncAdvanced(); decorateNumbers(); };
     listen(doc, "change", () => { syncAdvanced(); decorateNumbers(); });

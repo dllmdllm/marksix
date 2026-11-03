@@ -51,8 +51,9 @@ class MarkupTests(unittest.TestCase):
         self.assertFalse(any(n['attrs'].get('role')=='tabpanel' for n in self.doc.by_id('analysisMeta')['ancestors']))
     def test_progressive_disclosure_and_input_names(self):
         advanced=self.doc.by_id('advancedFilters');self.assertEqual(advanced['tag'],'details');self.assertNotIn('open',advanced['attrs'])
-        for id in ('redCount','metalCount','rowLimit','maxTail','maxConsecutive'):
+        for id in ('redCount','rowLimit','maxTail','maxConsecutive'):
             self.assertIn(advanced,self.doc.by_id(id)['ancestors'])
+        self.assertNotIn(advanced,self.doc.by_id('metalCount')['ancestors'])
         for n in self.doc.nodes:
             if n['tag']=='input' and ('data-count' in n['attrs'] or 'data-row' in n['attrs'] or n['attrs'].get('type')=='range'):
                 self.assertIn('aria-label',n['attrs'])
