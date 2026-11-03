@@ -2513,6 +2513,17 @@ if (els.countExact) els.countExact.addEventListener("click", () => {
   scheduleComboCount(filters, pool, buildFilterKey(filters, pool));
 });
 
+const AUTO_COUNT_LIMIT = 2000000;
+function combinationSpace(poolSize, requiredCount) {
+  const n = poolSize - requiredCount;
+  const k = 6 - requiredCount;
+  if (k < 0) return Infinity;
+  if (k === 0) return 1;
+  let result = 1;
+  for (let i = 1; i <= k; i += 1) result = (result * (n - k + i)) / i;
+  return result;
+}
+
 function scheduleComboCount(filters, pool, key) {
   clearTimeout(countTimer);
   setCountRunning(true);
@@ -2617,6 +2628,9 @@ function autoUpdate(forceGenerate = false) {
       applyCombinationCount(state.lastComboCount, filters, pool, key);
     } else if (Number.isFinite(state.generationReport?.available) && state.generationReport.countKey === key) {
       setComboCount(`可組合：${state.generationReport.available.toLocaleString("en-US")}`);
+    } else if (combinationSpace(pool.length, state.historyMode === "include" ? state.included.size : 0) <= AUTO_COUNT_LIMIT) {
+      setComboCount("可組合：計算中…");
+      scheduleComboCount(filters, pool, key);
     } else {
       setComboCount("可組合：未計算（按「精確計算」；較大號碼池可能需時）");
     }
