@@ -2508,8 +2508,8 @@ const poolBalls = [];
 if (poolGrid) {
   for (let n = 1; n <= 49; n += 1) {
     const ball = document.createElement("span");
-    ball.className = `ball ${getColorClass(n)} pool-ball`;
-    ball.textContent = pad2(n);
+    ball.className = `ball ${getColorClass(n)} with-element pool-ball`;
+    ball.innerHTML = `<span>${pad2(n)}</span><span class="element-inner">${getElementTag(n)}</span>`;
     poolGrid.appendChild(ball);
     poolBalls.push(ball);
   }
