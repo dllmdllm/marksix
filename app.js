@@ -2502,6 +2502,8 @@ function cancelComboCount() {
 }
 
 if (els.cancelCount) els.cancelCount.addEventListener("click", cancelComboCount);
+const railExactCount = document.getElementById("railExactCount");
+if (railExactCount && els.countExact) railExactCount.addEventListener("click", () => els.countExact.click());
 if (els.countExact) els.countExact.addEventListener("click", () => {
   const filters = readFilters();
   let pool = getFilteredPool(filters);
