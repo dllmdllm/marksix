@@ -1001,3 +1001,5 @@ body {
     margin: 0;
   }
 }
+
+#activeConditions { white-space: pre-line; line-height: 1.65; }
