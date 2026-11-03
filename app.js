@@ -1,5 +1,6 @@
 const API_URL = "https://info.cld.hkjc.com/graphql/base/";
 const LOCAL_API = "http://127.0.0.1:5177/api/marksix";
+const HOSTED_API = typeof location !== "undefined" && location.protocol === "https:" && location.hostname !== "dllmdllm.github.io" ? "/api/marksix" : null;
 const STATIC_API = "data/marksix.json";
 const AUTO_SYNC_LATEST = 100;
 const DRAW_DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\+08:00|T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2}))?$/;
@@ -68,6 +69,8 @@ const els = {
   cancelCount: document.getElementById("cancelCount"),
   excludedSummary: document.getElementById("excludedSummary"),
   heroJackpot: document.getElementById("heroJackpot"),
+  dayElementSummary: document.getElementById("dayElementSummary"),
+  hourElementGrid: document.getElementById("hourElementGrid"),
   rowLimit: document.getElementById("rowLimit"),
   redCount: document.getElementById("redCount"),
   blueCount: document.getElementById("blueCount"),
@@ -641,6 +644,7 @@ async function fetchDraws(n) {
 }
 
 function renderDraws() {
+  renderDayElements(state.latestInfo?.drawDate || hkTodayString());
   if (els.heroJackpot) {
     if (!state.latestInfo) {
       els.heroJackpot.textContent = "-";
@@ -691,6 +695,82 @@ function getElementTag(num) {
   if ([7, 8, 15, 16, 29, 30, 37, 38, 45, 46].includes(num)) return "火";
   if ([3, 4, 17, 18, 25, 26, 33, 34, 47, 48].includes(num)) return "土";
   return "";
+}
+
+const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+const STEM_ELEMENTS = ["木", "木", "火", "火", "土", "土", "金", "金", "水", "水"];
+const BRANCH_ELEMENTS = ["水", "土", "木", "木", "土", "火", "火", "土", "金", "金", "土", "水"];
+const HOUR_RANGES = ["23:00–01:00", "01:00–03:00", "03:00–05:00", "05:00–07:00", "07:00–09:00", "09:00–11:00", "11:00–13:00", "13:00–15:00", "15:00–17:00", "17:00–19:00", "19:00–21:00", "21:00–23:00"];
+
+function dayPillarFor(dateStr) {
+  const match = /^([0-9]{4})-([0-9]{2})-([0-9]{2})/.exec(String(dateStr || ""));
+  if (!match) return null;
+  const days = Math.floor((Date.UTC(+match[1], +match[2] - 1, +match[3]) - Date.UTC(2000, 0, 1)) / 86400000);
+  const index = (((54 + days) % 60) + 60) % 60;
+  const stemIndex = index % 10;
+  const branchIndex = index % 12;
+  return {
+    stem: STEMS[stemIndex],
+    branch: BRANCHES[branchIndex],
+    stemIndex,
+    branchIndex,
+    stemElement: STEM_ELEMENTS[stemIndex],
+    branchElement: BRANCH_ELEMENTS[branchIndex]
+  };
+}
+
+function hourPillarsFor(dateStr) {
+  const day = dayPillarFor(dateStr);
+  if (!day) return [];
+  const startStem = [0, 2, 4, 6, 8][day.stemIndex % 5];
+  return BRANCHES.map((branch, i) => {
+    const stemIndex = (startStem + i) % 10;
+    return {
+      name: `${branch}時`,
+      range: HOUR_RANGES[i],
+      stem: STEMS[stemIndex],
+      branch,
+      stemElement: STEM_ELEMENTS[stemIndex],
+      branchElement: BRANCH_ELEMENTS[i],
+      isDrawHour: branch === "亥"
+    };
+  });
+}
+
+function hkTodayString() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Hong_Kong" });
+}
+
+function renderDayElements(dateStr) {
+  if (!els.dayElementSummary || !els.hourElementGrid) return;
+  const day = dayPillarFor(dateStr);
+  if (!day) {
+    els.dayElementSummary.textContent = "暫無攪珠日期。";
+    els.hourElementGrid.innerHTML = "";
+    return;
+  }
+  const dateText = formatDateDmy(dateStr);
+  const weekday = formatWeekday(dateStr);
+  els.dayElementSummary.textContent = `${dateText}${weekday ? `（${weekday}）` : ""}：${day.stem}${day.branch}日 — 日干${day.stem}屬${day.stemElement}、日支${day.branch}屬${day.branchElement}；當日五行以日干為主，屬${day.stemElement}。`;
+  els.hourElementGrid.innerHTML = "";
+  for (const hour of hourPillarsFor(dateStr)) {
+    const cell = document.createElement("div");
+    cell.className = hour.isDrawHour ? "hour-cell draw-hour" : "hour-cell";
+    const title = document.createElement("div");
+    title.className = "hour-title";
+    title.textContent = `${hour.name} ${hour.range}${hour.isDrawHour ? "・攪珠" : ""}`;
+    const pillar = document.createElement("div");
+    pillar.className = "hour-pillar";
+    pillar.textContent = `${hour.stem}${hour.branch}`;
+    const elements = document.createElement("div");
+    elements.className = "hour-elements";
+    elements.textContent = `干${hour.stemElement}・支${hour.branchElement}`;
+    cell.appendChild(title);
+    cell.appendChild(pillar);
+    cell.appendChild(elements);
+    els.hourElementGrid.appendChild(cell);
+  }
 }
 
 function renderBallList(container, nums) {
@@ -997,7 +1077,7 @@ function updateRepeatInfo() {
 }
 
 function analysisSourceName() {
-  return { local: "本地 CSV", snapshot: "隨附歷史快照", session: "公開端點（本頁樣本）" }[state.analysisSource] || "歷史樣本";
+  return { local: "本地 CSV", server: "伺服器 CSV", snapshot: "隨附歷史快照", session: "公開端點（本頁樣本）" }[state.analysisSource] || "歷史樣本";
 }
 
 function invalidateSuggestions() {
@@ -1428,9 +1508,9 @@ async function fetchAnalysisData() {
   try {
     let data;
     let draws;
-    let source = "local";
+    let source = HOSTED_API ? "server" : "local";
     try {
-      const response = await fetchWithTimeout(LOCAL_API, { cache: "no-store" });
+      const response = await fetchWithTimeout(HOSTED_API || LOCAL_API, { cache: "no-store" });
       if (!response.ok) throw new Error("local_fetch_failed");
       data = await response.json();
       draws = readAnalysisPayload(data);
@@ -2654,4 +2734,5 @@ renderDragList();
 updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
+renderDayElements(hkTodayString());
 fetchAnalysisData();

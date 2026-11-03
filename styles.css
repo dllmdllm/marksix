@@ -963,3 +963,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+.hour-cell {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--card);
+}
+.hour-cell .hour-title { font-size: 0.78rem; color: var(--muted); }
+.hour-cell .hour-pillar { font-size: 1.05rem; font-weight: 600; }
+.hour-cell .hour-elements { font-size: 0.82rem; color: var(--muted); }
+.hour-cell.draw-hour { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+.day-elements { margin-top: 10px; }
+.day-elements-title { font-weight: 700; margin: 0 0 2px; }
+.day-elements .hour-pillar { font-size: 0.98rem; }
+.day-elements .hour-title { font-size: 0.7rem; }

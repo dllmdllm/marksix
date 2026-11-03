@@ -14,6 +14,7 @@ import tempfile
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -21,6 +22,9 @@ API_URL = "https://info.cld.hkjc.com/graphql/base/"
 HK = timezone(timedelta(hours=8))
 DATE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:\+08:00|T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|[+-][0-9]{2}:[0-9]{2}))?$")
 ALLOWED_ORIGINS = {"https://dllmdllm.github.io", "http://127.0.0.1:8000", "http://localhost:8000"}
+EXTRA_ORIGINS = {item.strip() for item in os.environ.get("MARKSIX_ALLOWED_ORIGINS", "").split(",") if item.strip()}
+ALLOWED_ORIGINS |= EXTRA_ORIGINS
+EXTRA_HOSTS = {urlparse(origin).netloc for origin in EXTRA_ORIGINS if urlparse(origin).netloc}
 _locks = {}
 _locks_guard = threading.Lock()
 
@@ -480,7 +484,7 @@ def create_server(path, port):
         def _allowed(self):
             origin = self.headers.get("Origin")
             host = self.headers.get("Host")
-            allowed_hosts = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"}
+            allowed_hosts = {f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}"} | EXTRA_HOSTS
             if host not in allowed_hosts or (origin is not None and origin not in ALLOWED_ORIGINS):
                 self._send(403, {"error": "Origin or Host not allowed"})
                 return False

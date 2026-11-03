@@ -343,3 +343,21 @@ test('broad edits sample promptly without launching exhaustive counting; explici
   const counting=h.flush(200);h.node('cancelCount').emit('click');finish(999);await counting;
   assert.doesNotMatch(h.node('comboCount').textContent,/999/);assert.equal(h.run('state.lastComboCount'),42);assert.equal(h.node('cancelCount').hidden,true);
 });
+
+test('day pillar matches verified calendar anchors', () => {
+  const h = harness();
+  assert.equal(h.run('dayPillarFor("2026-11-03").stem + dayPillarFor("2026-11-03").branch'), '辛巳');
+  assert.equal(h.run('dayPillarFor("2026-11-03").stemElement'), '金');
+  assert.equal(h.run('dayPillarFor("2026-11-03").branchElement'), '火');
+  assert.equal(h.run('dayPillarFor("2026-01-03").stem + dayPillarFor("2026-01-03").branch'), '丁丑');
+  assert.equal(h.run('dayPillarFor("2000-01-01").stem + dayPillarFor("2000-01-01").branch'), '戊午');
+  assert.equal(h.run('dayPillarFor("not-a-date")'), null);
+});
+test('hour pillars follow the five-rat rule from the day stem', () => {
+  const h = harness();
+  assert.equal(h.run('hourPillarsFor("2026-11-03").length'), 12);
+  assert.equal(h.run('hourPillarsFor("2026-11-03").find(x => x.branch === "亥").stem'), '己');
+  assert.equal(h.run('hourPillarsFor("2026-11-03").find(x => x.branch === "亥").isDrawHour'), true);
+  assert.equal(h.run('hourPillarsFor("2026-01-03").find(x => x.branch === "申").stem'), '戊');
+  assert.equal(h.run('hourPillarsFor("2026-01-03").find(x => x.branch === "子").stem'), '庚');
+});
