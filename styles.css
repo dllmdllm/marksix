@@ -985,3 +985,19 @@ body {
 .day-elements-title { font-weight: 700; margin: 0 0 2px; }
 .day-elements .hour-pillar { font-size: 0.98rem; }
 .day-elements .hour-title { font-size: 0.7rem; }
+
+.workspace-grid { display: block; }
+.workspace-main { min-width: 0; }
+@media (min-width: 1024px) {
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .workspace-grid .workspace-context {
+    position: sticky;
+    top: 64px;
+    margin: 0;
+  }
+}
