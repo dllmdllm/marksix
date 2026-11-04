@@ -994,7 +994,7 @@ body {
 
 .day-elements .hint { font-size: 0.8rem; }
 .day-elements-title { font-size: 0.95rem; }
-.rail-actions { margin: 6px 0 10px; }
+.rail-actions { margin: 6px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 @media (min-width: 1024px) {
   .hero-details { grid-template-columns: 1fr 1fr; column-gap: 24px; }
 }

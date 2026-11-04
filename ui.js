@@ -65,6 +65,10 @@
       doc.getElementById("generateBtn").click();
       activateView("results", true);
     });
+    listen(doc.getElementById("railGenerate"), "click", () => {
+      doc.getElementById("generateBtn").click();
+      activateView("results", true);
+    });
 
     function decorateNumbers() {
       const picking = doc.querySelector('input[name="historyMode"]:checked')?.value === "include";
