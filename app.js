@@ -63,6 +63,7 @@ const els = {
   fetchStatus: document.getElementById("fetchStatus"),
   repeatInfo: document.getElementById("repeatInfo"),
   boardHint: document.getElementById("boardHint"),
+  sumHistoryHint: document.getElementById("sumHistoryHint"),
   comboCount: document.getElementById("comboCount"),
   countExact: document.getElementById("countExact"),
   cancelCount: document.getElementById("cancelCount"),
@@ -565,6 +566,7 @@ async function syncLatestDraws(targetCount = AUTO_SYNC_LATEST) {
     updateAnalysisView();
     updateRepeatInfo();
     renderAnalysisMetadata();
+    renderSumHistoryHint();
     setSyncStatus(`本頁已載入 ${resultDraws.length} 期；未寫入 CSV 或網站快照，未獨立對帳官方結果。`);
     setSyncProgress(100);
   } catch (err) {
@@ -1066,6 +1068,24 @@ function describeAnalysisWindow(window = analysisWindow()) {
   return `${analysisSourceName()}｜實際 ${window.length} 期：${window.at(-1).drawDate.slice(0, 10)} 至 ${window[0].drawDate.slice(0, 10)}（只計主號碼；未獨立對帳，唔保證係最新資料；無預測優勢）`;
 }
 
+function renderSumHistoryHint() {
+  if (!els.sumHistoryHint) return;
+  const recent = getRecentAnalysisDraws(100);
+  if (!recent.length) {
+    els.sumHistoryHint.textContent = "過去 100 期實際總和：未有歷史資料。";
+    return;
+  }
+  const sums = recent
+    .map((draw) => draw.numbers.reduce((acc, n) => acc + n, 0))
+    .sort((a, b) => a - b);
+  const n = sums.length;
+  const mean = Math.round(sums.reduce((acc, v) => acc + v, 0) / n);
+  const median = n % 2 ? sums[(n - 1) / 2] : Math.round((sums[n / 2 - 1] + sums[n / 2]) / 2);
+  const q1 = sums[Math.floor(n * 0.25)];
+  const q3 = sums[Math.floor(n * 0.75)];
+  els.sumHistoryHint.textContent = `過去 ${n} 期實際總和：${sums[0]}–${sums[n - 1]} · 平均 ${mean} · 中位數 ${median} · 中間一半落喺 ${q1}–${q3}`;
+}
+
 function getRecentAnalysisDraws(count) {
   if (!state.analysisDraws.length) return [];
   return [...state.analysisDraws]
@@ -1497,6 +1517,7 @@ async function fetchAnalysisData() {
     updateAnalysisView();
     updateRepeatInfo();
     renderAnalysisMetadata();
+    renderSumHistoryHint();
   } catch (err) {
     state.analysisDraws = [];
     state.analysisSource = null;
@@ -1506,6 +1527,7 @@ async function fetchAnalysisData() {
     updateAnalysisView();
     updateRepeatInfo();
     renderAnalysisMetadata();
+    renderSumHistoryHint();
   }
 }
 

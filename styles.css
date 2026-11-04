@@ -583,14 +583,6 @@ body {
   opacity: 1;
 }
 
-.archive-notice {
-  border-left: 4px solid #ae3520;
-  padding: 7px 10px;
-  margin-top: 8px;
-  background: #fff7ea;
-  color: #762918;
-  font-size: 0.85rem;
-}
 
 .row-picks {
   flex-wrap: wrap;
