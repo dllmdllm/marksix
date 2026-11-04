@@ -673,9 +673,8 @@ body {
 }
 
 .count-line-list .ball {
-  width: 30px;
-  height: 30px;
-  font-size: 0.7rem;
+  width: 40px;
+  height: 40px;
 }
 
 .count-option {
@@ -900,9 +899,8 @@ body {
   }
 
   .count-line-list .ball {
-    width: 26px;
-    height: 26px;
-    font-size: 0.6rem;
+    width: 40px;
+    height: 40px;
   }
 }
 
