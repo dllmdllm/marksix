@@ -71,6 +71,14 @@ const els = {
   heroJackpot: document.getElementById("heroJackpot"),
   dayElementSummary: document.getElementById("dayElementSummary"),
   hourElementGrid: document.getElementById("hourElementGrid"),
+  baziBox: document.getElementById("baziBox"),
+  baziBirthDate: document.getElementById("baziBirthDate"),
+  baziBirthTime: document.getElementById("baziBirthTime"),
+  baziCalc: document.getElementById("baziCalc"),
+  baziClear: document.getElementById("baziClear"),
+  baziResult: document.getElementById("baziResult"),
+  baziFavChips: document.getElementById("baziFavChips"),
+  baziLuckySummary: document.getElementById("baziLuckySummary"),
   rowLimit: document.getElementById("rowLimit"),
   redCount: document.getElementById("redCount"),
   blueCount: document.getElementById("blueCount"),
@@ -161,6 +169,8 @@ const state = {
   latestInfo: null,
   analysisDraws: [],
   sumTouched: false,
+  bazi: null,
+  dayElementsDate: null,
   analysisSource: null,
   analysisMetadata: null,
   historyRequestToken: 0,
@@ -741,12 +751,175 @@ function hourPillarsFor(dateStr) {
   });
 }
 
+function sunLongitude(dateMs) {
+  const d = dateMs / 86400000 - 10957.5;
+  const g = (357.528 + 0.9856003 * d) % 360;
+  let lon = (280.460 + 0.9856474 * d + 1.915 * Math.sin(g * Math.PI / 180) + 0.020 * Math.sin(2 * g * Math.PI / 180)) % 360;
+  if (lon < 0) lon += 360;
+  return lon;
+}
+
+function solarTermMoment(year, termIndex) {
+  const target = (285 + 15 * termIndex) % 360;
+  let t = Date.UTC(year, 0, 5, 12) + termIndex * 15.218 * 86400000;
+  for (let i = 0; i < 50; i += 1) {
+    let diff = target - sunLongitude(t);
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    if (Math.abs(diff) < 0.0005) break;
+    t += (diff / 0.9856) * 86400000;
+  }
+  return t;
+}
+
+// [solar term index, month branch index]: 立春寅、驚蟄卯、清明辰、立夏巳、芒種午、
+// 小暑未、立秋申、白露酉、寒露戌、立冬亥、大雪子、小寒丑。
+const JIE_TERMS = [[2, 2], [4, 3], [6, 4], [8, 5], [10, 6], [12, 7], [14, 8], [16, 9], [18, 10], [20, 11], [22, 0], [0, 1]];
+
+function pillarOf(stemIndex, branchIndex) {
+  return {
+    stem: STEMS[stemIndex],
+    branch: BRANCHES[branchIndex],
+    stemIndex,
+    branchIndex,
+    stemElement: STEM_ELEMENTS[stemIndex],
+    branchElement: BRANCH_ELEMENTS[branchIndex]
+  };
+}
+
+function fourPillars(dateStr, timeStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ""));
+  if (!m) return null;
+  const year = +m[1];
+  const tm = /^(\d{2}):(\d{2})/.exec(String(timeStr || ""));
+  const hh = tm ? +tm[1] : 12;
+  const mi = tm ? +tm[2] : 0;
+  const birthMs = Date.UTC(year, +m[2] - 1, +m[3], hh - 8, mi);
+  const pillarYear = birthMs < solarTermMoment(year, 2) ? year - 1 : year;
+  const yearPillar = pillarOf(((pillarYear - 4) % 10 + 10) % 10, ((pillarYear - 4) % 12 + 12) % 12);
+  let monthBranchIndex = 1;
+  let latest = -Infinity;
+  for (const yy of [year - 1, year, year + 1]) {
+    for (const [termIndex, branchIndex] of JIE_TERMS) {
+      const moment = solarTermMoment(yy, termIndex);
+      if (moment <= birthMs && moment > latest) { latest = moment; monthBranchIndex = branchIndex; }
+    }
+  }
+  const firstMonthStem = [2, 4, 6, 8, 0][yearPillar.stemIndex % 5];
+  const monthOffset = (monthBranchIndex - 2 + 12) % 12;
+  const monthPillar = pillarOf((firstMonthStem + monthOffset) % 10, monthBranchIndex);
+  const day = dayPillarFor(dateStr);
+  if (!day) return null;
+  const hourBranchIndex = Math.floor(((hh + 1) % 24) / 2);
+  const hourStartStem = [0, 2, 4, 6, 8][day.stemIndex % 5];
+  const hourPillar = pillarOf((hourStartStem + hourBranchIndex) % 10, hourBranchIndex);
+  return { year: yearPillar, month: monthPillar, day: pillarOf(day.stemIndex, day.branchIndex), hour: hourPillar };
+}
+
+const ELEMENT_GENERATES = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
+const ELEMENT_GENERATED_BY = { "木": "水", "水": "金", "金": "土", "土": "火", "火": "木" };
+const ELEMENT_CONTROLS = { "木": "土", "土": "水", "水": "火", "火": "金", "金": "木" };
+
+function baziProfile(pillars) {
+  const self = pillars.day.stemElement;
+  const resource = ELEMENT_GENERATED_BY[self];
+  const chars = [
+    { e: pillars.year.stemElement, w: 1 }, { e: pillars.year.branchElement, w: 1 },
+    { e: pillars.month.stemElement, w: 1 }, { e: pillars.month.branchElement, w: 2 },
+    { e: pillars.day.branchElement, w: 1 },
+    { e: pillars.hour.stemElement, w: 1 }, { e: pillars.hour.branchElement, w: 1 }
+  ];
+  let support = 0;
+  let total = 0;
+  for (const c of chars) {
+    total += c.w;
+    if (c.e === self || c.e === resource) support += c.w;
+  }
+  const strong = support * 2 >= total;
+  return {
+    self,
+    resource,
+    child: ELEMENT_GENERATES[self],
+    wealth: ELEMENT_CONTROLS[self],
+    support,
+    total,
+    strong,
+    favorable: strong ? [ELEMENT_GENERATES[self], ELEMENT_CONTROLS[self]] : [resource, self]
+  };
+}
+
+const BAZI_STORAGE_KEY = "marksix-bazi-v1";
+const FIVE_ELEMENTS = ["金", "木", "水", "火", "土"];
+
+function loadBazi() {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(BAZI_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data.birthDate || "")) return null;
+    return {
+      birthDate: data.birthDate,
+      birthTime: /^\d{2}:\d{2}/.test(data.birthTime || "") ? data.birthTime : "",
+      favorable: Array.isArray(data.favorable) ? data.favorable.filter((e) => FIVE_ELEMENTS.includes(e)) : []
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveBazi() {
+  try {
+    if (typeof localStorage === "undefined") return;
+    if (state.bazi) localStorage.setItem(BAZI_STORAGE_KEY, JSON.stringify(state.bazi));
+    else localStorage.removeItem(BAZI_STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function renderBaziPanel() {
+  if (!els.baziResult || !els.baziFavChips) return;
+  els.baziFavChips.innerHTML = "";
+  if (!state.bazi) {
+    els.baziResult.textContent = "輸入出生日期同時間，計出你嘅日主同喜用五行，時辰表會自動標示旺你嘅時辰。";
+    return;
+  }
+  const pillars = fourPillars(state.bazi.birthDate, state.bazi.birthTime);
+  if (!pillars) {
+    els.baziResult.textContent = "出生資料有誤，請重新輸入。";
+    return;
+  }
+  const prof = baziProfile(pillars);
+  const pillarText = [pillars.year, pillars.month, pillars.day, pillars.hour].map((p) => `${p.stem}${p.branch}`).join(" ");
+  els.baziResult.textContent = `四柱：${pillarText}｜日主 ${pillars.day.stem}（${prof.self}）｜${prof.strong ? "身強" : "身弱"}（扶助 ${prof.support}/${prof.total}，簡化估算）｜喜用：${state.bazi.favorable.length ? state.bazi.favorable.join("、") : "未選（㩒下面五行自選）"}`;
+  for (const e of FIVE_ELEMENTS) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "fav-chip";
+    chip.textContent = e;
+    const on = state.bazi.favorable.includes(e);
+    chip.setAttribute("aria-pressed", on ? "true" : "false");
+    chip.classList.toggle("on", on);
+    chip.addEventListener("click", () => {
+      const fav = new Set(state.bazi.favorable);
+      if (fav.has(e)) fav.delete(e); else fav.add(e);
+      state.bazi.favorable = [...fav];
+      saveBazi();
+      renderBaziPanel();
+      renderDayElements(state.dayElementsDate || hkTodayString());
+    });
+    els.baziFavChips.appendChild(chip);
+  }
+}
+
 function hkTodayString() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Hong_Kong" });
 }
 
 function renderDayElements(dateStr) {
   if (!els.dayElementSummary || !els.hourElementGrid) return;
+  state.dayElementsDate = dateStr;
   const day = dayPillarFor(dateStr);
   if (!day) {
     els.dayElementSummary.textContent = "暫無攪珠日期。";
@@ -757,12 +930,18 @@ function renderDayElements(dateStr) {
   const weekday = formatWeekday(dateStr);
   els.dayElementSummary.textContent = `${dateText}${weekday ? `（${weekday}）` : ""}：${day.stem}${day.branch}日 — 日干${day.stem}屬${day.stemElement}、日支${day.branch}屬${day.branchElement}；當日五行以日干為主，屬${day.stemElement}。`;
   els.hourElementGrid.innerHTML = "";
+  const favSet = state.bazi && Array.isArray(state.bazi.favorable) && state.bazi.favorable.length ? new Set(state.bazi.favorable) : null;
+  const luckyNames = [];
   for (const hour of hourPillarsFor(dateStr)) {
+    const stemFav = favSet ? favSet.has(hour.stemElement) : false;
+    const branchFav = favSet ? favSet.has(hour.branchElement) : false;
+    const lucky = stemFav || branchFav;
+    if (lucky) luckyNames.push(stemFav && branchFav ? `${hour.name}（雙合）` : hour.name);
     const cell = document.createElement("div");
-    cell.className = hour.isDrawHour ? "hour-cell draw-hour" : "hour-cell";
+    cell.className = `hour-cell${hour.isDrawHour ? " draw-hour" : ""}${lucky ? (stemFav && branchFav ? " lucky-strong" : " lucky") : ""}`;
     const title = document.createElement("div");
     title.className = "hour-title";
-    title.textContent = `${hour.name} ${hour.range}${hour.isDrawHour ? "・攪珠" : ""}`;
+    title.textContent = `${hour.name} ${hour.range}${hour.isDrawHour ? "・攪珠" : ""}${lucky ? "・旺你" : ""}`;
     const pillar = document.createElement("div");
     pillar.className = "hour-pillar";
     pillar.textContent = `${hour.stem}${hour.branch}`;
@@ -773,6 +952,9 @@ function renderDayElements(dateStr) {
     cell.appendChild(pillar);
     cell.appendChild(elements);
     els.hourElementGrid.appendChild(cell);
+  }
+  if (els.baziLuckySummary) {
+    els.baziLuckySummary.textContent = !favSet ? "" : luckyNames.length ? `旺你時辰：${luckyNames.join("、")}（干或支啱喜用；「雙合」即干支都啱）` : "今日暫無旺你時辰（冇時辰嘅干或支啱你嘅喜用五行）。";
   }
 }
 
@@ -2762,6 +2944,37 @@ if (els.historyModeInputs && els.historyModeInputs.length) {
   }
 });
 
+if (els.baziCalc) {
+  els.baziCalc.addEventListener("click", () => {
+    const date = els.baziBirthDate ? els.baziBirthDate.value : "";
+    const time = els.baziBirthTime ? els.baziBirthTime.value : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) {
+      if (els.baziResult) els.baziResult.textContent = "請先輸入出生日期。";
+      return;
+    }
+    const pillars = fourPillars(date, time);
+    if (!pillars) {
+      if (els.baziResult) els.baziResult.textContent = "出生資料有誤，請重新輸入。";
+      return;
+    }
+    state.bazi = { birthDate: date, birthTime: time || "", favorable: baziProfile(pillars).favorable };
+    saveBazi();
+    renderBaziPanel();
+    renderDayElements(state.dayElementsDate || hkTodayString());
+    if (els.baziBox) els.baziBox.open = true;
+  });
+}
+if (els.baziClear) {
+  els.baziClear.addEventListener("click", () => {
+    state.bazi = null;
+    saveBazi();
+    if (els.baziBirthDate) els.baziBirthDate.value = "";
+    if (els.baziBirthTime) els.baziBirthTime.value = "";
+    renderBaziPanel();
+    renderDayElements(state.dayElementsDate || hkTodayString());
+  });
+}
+
 renderNumberBoard();
       if (els.includeSection) {
         els.includeSection.style.display = state.historyMode === "include" ? "" : "none";
@@ -2780,5 +2993,12 @@ renderDragList();
 updateCountConstraints();
 updateSumRangeUI();
 fetchDraws(parseNumber(els.lastN.value) || 0);
+state.bazi = loadBazi();
+if (state.bazi) {
+  if (els.baziBirthDate) els.baziBirthDate.value = state.bazi.birthDate;
+  if (els.baziBirthTime) els.baziBirthTime.value = state.bazi.birthTime || "";
+  if (els.baziBox) els.baziBox.open = true;
+}
+renderBaziPanel();
 renderDayElements(hkTodayString());
 fetchAnalysisData();

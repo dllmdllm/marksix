@@ -361,3 +361,22 @@ test('hour pillars follow the five-rat rule from the day stem', () => {
   assert.equal(h.run('hourPillarsFor("2026-01-03").find(x => x.branch === "申").stem'), '戊');
   assert.equal(h.run('hourPillarsFor("2026-01-03").find(x => x.branch === "子").stem'), '庚');
 });
+
+test('bazi pillars and favorable elements match almanac anchors', () => {
+  const h = harness();
+  const p1 = JSON.parse(h.run('JSON.stringify(fourPillars("2000-01-01", "12:00"))'));
+  assert.equal(`${p1.year.stem}${p1.year.branch}`, '己卯');
+  assert.equal(`${p1.month.stem}${p1.month.branch}`, '丙子');
+  assert.equal(`${p1.day.stem}${p1.day.branch}`, '戊午');
+  assert.equal(`${p1.hour.stem}${p1.hour.branch}`, '戊午');
+  const prof1 = JSON.parse(h.run('JSON.stringify(baziProfile(fourPillars("2000-01-01", "12:00")))'));
+  assert.equal(prof1.self, '土');
+  assert.equal(prof1.strong, true);
+  assert.deepEqual(prof1.favorable, ['金', '水']);
+  const p2 = JSON.parse(h.run('JSON.stringify(fourPillars("2026-02-03", "12:00"))'));
+  assert.equal(`${p2.year.stem}${p2.year.branch}`, '乙巳');
+  assert.equal(`${p2.month.stem}${p2.month.branch}`, '己丑');
+  const p3 = JSON.parse(h.run('JSON.stringify(fourPillars("2026-02-04", "12:00"))'));
+  assert.equal(`${p3.year.stem}${p3.year.branch}`, '丙午');
+  assert.equal(`${p3.month.stem}${p3.month.branch}`, '庚寅');
+});

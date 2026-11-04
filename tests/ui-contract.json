@@ -614,6 +614,14 @@
           "value": "100"
         }
       ]
+    },
+    "baziBirthDate": {
+      "id": "baziBirthDate",
+      "type": "date"
+    },
+    "baziBirthTime": {
+      "id": "baziBirthTime",
+      "type": "time"
     }
   }
 }
