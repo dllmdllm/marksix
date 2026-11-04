@@ -102,6 +102,7 @@ const els = {
   sumMin: document.getElementById("sumMin"),
   sumMax: document.getElementById("sumMax"),
   sumRange: document.getElementById("sumRange"),
+  sumLabel: document.getElementById("sumLabel"),
   sumMinLabel: document.getElementById("sumMinLabel"),
   sumMaxLabel: document.getElementById("sumMaxLabel"),
   oddCount: document.getElementById("oddCount"),
@@ -159,6 +160,7 @@ const state = {
   countToken: 0,
   latestInfo: null,
   analysisDraws: [],
+  sumTouched: false,
   analysisSource: null,
   analysisMetadata: null,
   historyRequestToken: 0,
@@ -1084,6 +1086,15 @@ function renderSumHistoryHint() {
   const q1 = sums[Math.floor(n * 0.25)];
   const q3 = sums[Math.floor(n * 0.75)];
   els.sumHistoryHint.textContent = `過去 ${n} 期實際總和：${sums[0]}–${sums[n - 1]} · 平均 ${mean} · 中位數 ${median} · 中間一半落喺 ${q1}–${q3}`;
+  if (els.sumLabel) {
+    els.sumLabel.textContent = `6個號碼總和（過去 ${n} 期實際 ${sums[0]}–${sums[n - 1]}）`;
+  }
+  if (!state.sumTouched && els.sumMin && els.sumMax) {
+    els.sumMin.value = String(q1);
+    els.sumMax.value = String(q3);
+    if (typeof els.sumRange?.style?.setProperty === "function") updateSumRangeUI();
+    autoUpdate();
+  }
 }
 
 function getRecentAnalysisDraws(count) {
@@ -2746,6 +2757,9 @@ if (els.historyModeInputs && els.historyModeInputs.length) {
   if (!input) return;
   input.addEventListener("input", autoUpdate);
   input.addEventListener("change", autoUpdate);
+  if (input === els.sumMin || input === els.sumMax) {
+    input.addEventListener("input", () => { state.sumTouched = true; });
+  }
 });
 
 renderNumberBoard();
