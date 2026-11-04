@@ -2,7 +2,7 @@
   "use strict";
 
   function createWorkspace(doc, win) {
-    const names = { choose: "揀號碼", filters: "設條件", results: "睇結果", history: "歷史分析" };
+    const names = { filters: "設條件", results: "睇結果", history: "歷史分析" };
     const ids = Object.keys(names);
     const tabs = ids.map((id) => doc.getElementById(`${id}Tab`));
     const panels = ids.map((id) => doc.getElementById(`${id}View`));
@@ -10,8 +10,8 @@
     const mobile = doc.getElementById("mobileActions");
     const back = doc.getElementById("returnToWorkflow");
     const cleanup = [];
-    let current = "choose";
-    let lastWorkflow = "choose";
+    let current = "filters";
+    let lastWorkflow = "filters";
     let lastConflict = "";
     let lastNumberFocus = null;
 
@@ -68,12 +68,12 @@
 
     function decorateNumbers() {
       const picking = doc.querySelector('input[name="historyMode"]:checked')?.value === "include";
-      for (const [area, action] of [["numberBoard", "拖碼"], ["excludedSummary", "膽號"]]) {
+      for (const [area, action] of [["poolGrid", "拖碼"], ["excludedSummary", "膽號"]]) {
         const container = doc.getElementById(area);
         if (!container) continue;
         container.querySelectorAll(".ball[data-number]").forEach((ball) => {
           const selected = ball.classList.contains(action === "拖碼" ? "dragged" : "included");
-          const disabled = area === "numberBoard" && ball.classList.contains("included");
+          const disabled = area === "poolGrid" && ball.classList.contains("included");
           ball.setAttribute("aria-label", `號碼 ${ball.dataset.number}；${selected ? "已選" : picking ? "選取" : "查看"}${action}`);
           ball.tabIndex = picking && !disabled ? 0 : -1;
           if (picking) {
@@ -89,7 +89,7 @@
       }
       // app.js rebuilds historical cards on recalculation; retain keyboard focus
       // only when the focused number was removed, never over another control.
-      if (current === "choose" && lastNumberFocus && !lastNumberFocus.node.isConnected && doc.activeElement === doc.body) {
+      if (current === "filters" && lastNumberFocus && !lastNumberFocus.node.isConnected && doc.activeElement === doc.body) {
         const replacement = doc.getElementById(lastNumberFocus.area)?.querySelector(`[data-number="${lastNumberFocus.number}"]`);
         lastNumberFocus = null;
         if (replacement && replacement.tabIndex === 0) replacement.focus({ preventScroll: true });
@@ -97,7 +97,7 @@
     }
     listen(doc, "focusin", (event) => {
       const target = event.target;
-      const container = target.closest?.("#numberBoard, #excludedSummary");
+      const container = target.closest?.("#poolGrid, #excludedSummary");
       lastNumberFocus = container && target.dataset.number
         ? { node: target, area: container.id, number: target.dataset.number } : null;
     });
@@ -105,7 +105,7 @@
       const target = event.target;
       if ((event.key === "Enter" || event.key === " ") && target.dataset?.number
           && target.getAttribute("role") === "button" && target.getAttribute("aria-disabled") !== "true"
-          && target.closest?.("#numberBoard, #excludedSummary")) {
+          && target.closest?.("#poolGrid, #excludedSummary")) {
         event.preventDefault();
         target.click();
       }
@@ -158,13 +158,13 @@
       const source = doc.getElementById(id);
       if (source) observer?.observe(source, { childList: true, subtree: true, characterData: true });
     }
-    for (const id of ["numberBoard", "excludedSummary"]) {
+    for (const id of ["poolGrid", "excludedSummary"]) {
       const source = doc.getElementById(id);
       if (source) observer?.observe(source, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     }
     const resizer = typeof win.ResizeObserver === "function" ? new win.ResizeObserver(measureMobileBar) : null;
     if (mobile) resizer?.observe(mobile);
-    activateView("choose");
+    activateView("filters");
     sync();
     return {
       activateView, sync, measureMobileBar,

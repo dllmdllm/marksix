@@ -40,15 +40,17 @@ class MarkupTests(unittest.TestCase):
     def test_tabs_labels_targets_and_default_visibility(self):
         ids=[n['attrs']['id'] for n in self.doc.nodes if 'id' in n['attrs']]
         self.assertEqual(len(ids),len(set(ids)))
-        for name in ('choose','filters','results','history'):
+        for name in ('filters','results','history'):
             tab=self.doc.by_id(name+'Tab');panel=self.doc.by_id(name+'View')
             self.assertEqual(tab['attrs']['role'],'tab');self.assertEqual(tab['attrs']['aria-controls'],panel['attrs']['id'])
             self.assertEqual(panel['attrs']['aria-labelledby'],tab['attrs']['id']);self.assertEqual(panel['attrs']['role'],'tabpanel')
-            self.assertEqual('hidden' in panel['attrs'],name!='choose')
+            self.assertEqual('hidden' in panel['attrs'],name!='filters')
     def test_inputs_live_in_the_intended_retained_views(self):
-        for id,view in [('lastN','chooseView'),('numberBoard','chooseView'),('redCount','filtersView'),('sumMin','filtersView'),('generateBtn','resultsView'),('resultList','resultsView'),('analysisN','historyView'),('repeatInfo','historyView'),('syncAll','historyView')]:
+        for id,view in [('lastN','filtersView'),('redCount','filtersView'),('sumMin','filtersView'),('generateBtn','resultsView'),('resultList','resultsView'),('analysisN','historyView'),('repeatInfo','historyView'),('syncAll','historyView')]:
             self.assertIn(view,[p['attrs'].get('id') for p in self.doc.by_id(id)['ancestors']])
         self.assertFalse(any(n['attrs'].get('role')=='tabpanel' for n in self.doc.by_id('analysisMeta')['ancestors']))
+        for id in ('poolGrid','boardHint'):
+            self.assertFalse(any(n['attrs'].get('role')=='tabpanel' for n in self.doc.by_id(id)['ancestors']))
     def test_progressive_disclosure_and_input_names(self):
         advanced=self.doc.by_id('advancedFilters');self.assertEqual(advanced['tag'],'details');self.assertNotIn('open',advanced['attrs'])
         for id in ('redCount','rowLimit','maxTail','maxConsecutive'):

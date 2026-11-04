@@ -62,7 +62,6 @@ const els = {
   lastN: document.getElementById("lastN"),
   fetchStatus: document.getElementById("fetchStatus"),
   repeatInfo: document.getElementById("repeatInfo"),
-  numberBoard: document.getElementById("numberBoard"),
   boardHint: document.getElementById("boardHint"),
   comboCount: document.getElementById("comboCount"),
   countExact: document.getElementById("countExact"),
@@ -791,46 +790,16 @@ function renderNumberBoard() {
   if (els.boardHint) els.boardHint.textContent = state.historyMode === "include"
     ? "手選膽拖模式：點號碼盤選／移除拖碼；膽號由歷史組合點選。全部膽每組必出。"
     : "排除歷史號碼模式：灰色係已排除號碼；號碼盤只供查看。";
-  if (!els.numberBoard) return;
-  if (!els.numberBoard.children.length) {
-    for (let i = 1; i <= 49; i += 1) {
-      const cell = document.createElement("div");
-      cell.className = "number-cell";
+  renderPoolStates();
+}
 
-      const item = document.createElement("span");
-      item.className = `ball ${getColorClass(i)} with-element`;
-      item.dataset.number = String(i);
-      item.innerHTML = `
-        <span>${pad2(i)}</span>
-        <span class="element-inner">${getElementTag(i)}</span>
-      `;
-
-      cell.appendChild(item);
-      els.numberBoard.appendChild(cell);
-    }
-  }
-  els.numberBoard.querySelectorAll(".ball").forEach((ball) => {
-    const num = Number(ball.dataset.number);
-    if (state.excluded.has(num)) {
-      ball.classList.add("excluded");
-    } else {
-      ball.classList.remove("excluded");
-    }
-    if (state.included.has(num)) {
-      ball.classList.add("included");
-    } else {
-      ball.classList.remove("included");
-    }
-    if (state.dragged.has(num)) {
-      ball.classList.add("dragged");
-    } else {
-      ball.classList.remove("dragged");
-    }
-    if (state.suggested.has(num)) {
-      ball.classList.add("suggested");
-    } else {
-      ball.classList.remove("suggested");
-    }
+function renderPoolStates() {
+  poolBalls.forEach((ball, idx) => {
+    const num = idx + 1;
+    ball.classList.toggle("excluded", state.excluded.has(num));
+    ball.classList.toggle("included", state.included.has(num));
+    ball.classList.toggle("dragged", state.dragged.has(num));
+    ball.classList.toggle("suggested", state.suggested.has(num));
   });
 }
 
@@ -2509,6 +2478,7 @@ if (poolGrid) {
   for (let n = 1; n <= 49; n += 1) {
     const ball = document.createElement("span");
     ball.className = `ball ${getColorClass(n)} with-element pool-ball`;
+    ball.dataset.number = String(n);
     ball.innerHTML = `<span>${pad2(n)}</span><span class="element-inner">${getElementTag(n)}</span>`;
     poolGrid.appendChild(ball);
     poolBalls.push(ball);
@@ -2520,6 +2490,7 @@ function renderPoolBoard(pool) {
   poolBalls.forEach((ball, idx) => {
     ball.classList.toggle("pool-off", !inPool.has(idx + 1));
   });
+  renderPoolStates();
   if (poolBoardMeta) poolBoardMeta.textContent = `池內 ${pool.length} 個著燈 · ${49 - pool.length} 個熄燈（俾條件或者歷史排除咗）`;
 }
 
@@ -2661,8 +2632,8 @@ function autoUpdate(forceGenerate = false) {
 
 els.generateBtn.addEventListener("click", () => autoUpdate(true));
 
-if (els.numberBoard) {
-  els.numberBoard.addEventListener("click", (event) => {
+if (poolGrid) {
+  poolGrid.addEventListener("click", (event) => {
     const ball = event.target.closest(".ball");
     if (!ball || !ball.dataset.number) return;
     const num = Number(ball.dataset.number);

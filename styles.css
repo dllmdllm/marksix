@@ -1018,3 +1018,4 @@ body {
 .pool-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; justify-items: center; }
 .pool-grid .ball { transition: opacity 0.15s ease; }
 .pool-grid .ball.pool-off { opacity: 0.18; filter: grayscale(1); }
+.pool-grid .ball[role="button"] { cursor: pointer; }
