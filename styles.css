@@ -781,17 +781,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 4px 10px 4px 4px;
   border-radius: 999px;
   border: 1px solid #eadfcb;
   background: #ffffff;
 }
 
-.count-chip .ball {
-  width: 26px;
-  height: 26px;
-  font-size: 0.65rem;
-}
+/* Count-chip balls match the standard ball size (Nary, 2026-11-04). */
 
 .count-chip .count-num {
   font-size: 0.85rem;
